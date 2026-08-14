@@ -1,0 +1,32 @@
+# H4/S-23: o contexto de build de api e worker passou a ser a raiz do repo (referenciam
+# libs/SocialAi.Core). Este .dockerignore evita enviar artefatos do host (bin/obj/node_modules
+# do Windows) para o daemon, mantendo o build rápido e reproduzível.
+
+# .NET
+**/bin/
+**/obj/
+
+# Node
+**/node_modules/
+**/.next/
+**/dist/
+*.tsbuildinfo
+
+# git / IDE / OS
+.git/
+.gitignore
+.vs/
+.vscode/
+*.user
+.DS_Store
+Thumbs.db
+
+# segredos (NUNCA no contexto de build)
+.env
+.env.*
+!.env.example
+
+# docs / scripts não entram nos containers .NET
+docs/
+scripts/
+*.md

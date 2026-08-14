@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- H4/S-23: lib compartilhada (Domain + Data + ICurrentWorkspace + SecretProtector) entre
+       api e worker. Antes o worker referenciava apps/api/Api.csproj (Web SDK), o que forçava 3
+       workarounds (imagem aspnet, ErrorOnDuplicatePublishOutputFiles, contexto de build amplo).
+       Com Core (não-Web), o worker depende só do necessário e roda na imagem runtime.
+
+       NOTA: os tipos preservam os namespaces SocialAi.Api.Domain/Data/Infrastructure — assim as
+       migrations (apps/api/Migrations) e os ~28 consumidores não mudam. O assembly é SocialAi.Core;
+       o namespace histórico é mantido de propósito para uma extração de baixo risco. -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>SocialAi.Core</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- D (ADR-0008): templates built-in canônicos, gerados de services/agents/src/templates
+         por scripts/export-templates.mjs (fonte da verdade do shape CarouselTemplate). Embutidos
+         p/ sobreviver ao publish/Docker sem depender de cwd. O TemplateSeeder os semeia por workspace. -->
+    <EmbeddedResource Include="Data/Seed/builtin-templates.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.8" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.8" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.4" />
+    <!-- IConfiguration / IHostEnvironment usados por SecretProtector e DesignTimeFactory. -->
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.0" />
+  </ItemGroup>
+
+</Project>

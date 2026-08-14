@@ -1,0 +1,58 @@
+# deps
+node_modules/
+bin/
+obj/
+.next/
+dist/
+
+# build artifacts
+*.tsbuildinfo
+
+# logs locais de execução nativa (boot da API/worker fora do Docker)
+*.api-run.log
+.api-run.log
+*.run.log
+
+# env (segredos — NUNCA commitar)
+.env
+.env.local
+.env.*.local
+
+# minio data
+minio-data/
+
+# os
+.DS_Store
+Thumbs.db
+
+# Config local de dev (segredos efêmeros do E2E desta máquina — não versionar)
+apps/api/appsettings.Development.json
+# Logs de execução local (subida nativa dos serviços para E2E + QA)
+*.log
+# F7: dump de logs do container (não é produto — foi versionado por engano)
+/logs.txt
+
+# Artefatos de ferramentas (não fazem parte do produto)
+prompt.md
+
+# IDE / editor
+.idea/
+.vs/
+*.user
+*.suo
+.vscode/
+
+# diversos
+coverage/
+*.tmp
+*.bak
+
+# logs de debug soltos (não versionar)
+log.txt
+logs.txt
+
+apps/web/.shots/
+
+# scratch de design (não commitar)
+.cd-output/
+.cd-input/

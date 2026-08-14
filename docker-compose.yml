@@ -1,0 +1,187 @@
+# Social AI Platform — orquestração local / self-hosted (single-tenant por cliente).
+# 6 serviços: web, api, worker, agents, postgres, minio. (Redis removido — S-24: a fila
+# real é PublishLog no Postgres; o job store dos agents é em-memória por decisão.)
+# Segredos vêm de .env (gitignored). Ver .env.example.
+#   docker compose up --build
+name: social-ai-platform
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks: [backbone]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # AM-1: Graph API exige mídia JPEG via URL pública. MinIO = storage S3-compat público.
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - "${MINIO_PORT:-9000}:9000"      # API S3
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"  # console web
+    volumes:
+      - minio-data:/data
+    networks: [backbone]
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  api:
+    build:
+      # H4/S-23: contexto = raiz do repo (a API referencia libs/SocialAi.Core).
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_URLS: http://+:5080
+      ConnectionStrings__Postgres: "Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      Jwt__Secret: ${JWT_SECRET}
+      Jwt__Issuer: ${JWT_ISSUER:-social-ai-platform}
+      # A2: chave de cifra de segredos em repouso (AES-GCM). Defina antes do 1º deploy.
+      Secrets__EncryptionKey: ${SECRETS_ENCRYPTION_KEY}
+      DeployMode: ${DEPLOY_MODE:-single}
+      Agents__BaseUrl: "http://agents:4000"
+      # N4/S-29: segredo compartilhado com o agents (serviço interno).
+      Agents__InternalToken: ${AGENTS_INTERNAL_TOKEN:-}
+      # Credenciais do App Meta (OAuth Instagram). É a API que as lê (fallback do .env quando
+      # não cadastradas pela UI). O worker NÃO as usa — publica com o token já cifrado no banco.
+      Meta__AppId: ${META_APP_ID}
+      Meta__AppSecret: ${META_APP_SECRET}
+      Meta__RedirectUri: ${META_REDIRECT_URI:-http://localhost:5080/api/instagram/callback}
+      Cors__WebOrigin: ${WEB_ORIGIN:-http://localhost:3000}
+      # Gargalo nº1: a API materializa a imagem do slide (base64 → MinIO → ref minio:) NO MOMENTO
+      # da geração e serve um PROXY estável (302 → presigned fresca), deixando o DTO de /content leve
+      # (URL curta, não 10MB de blob). Sem estas vars, o store fica OFF e o base64 volta inline
+      # (degraded-mode honesto). Espelha o worker; mesmo bucket/credenciais.
+      Minio__Endpoint: "minio:9000"
+      Minio__AccessKey: ${MINIO_ROOT_USER}
+      Minio__SecretKey: ${MINIO_ROOT_PASSWORD}
+      Minio__PublicBaseUrl: ${MINIO_PUBLIC_BASE_URL:-}
+      # URL ABSOLUTA da API vista pelo BROWSER (p/ o DTO montar a URL do proxy). Vazio → relativa
+      # (mesma origem). Se o web está em origin diferente da API em prod, SETE com a URL pública da API.
+      Api__PublicBaseUrl: ${API_PUBLIC_BASE_URL:-${NEXT_PUBLIC_API_URL:-}}
+    ports:
+      - "${API_PORT:-5080}:5080"
+    depends_on:
+      postgres: { condition: service_healthy }
+    networks: [backbone]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  worker:
+    build:
+      # H4/S-23: contexto = raiz do repo porque o worker referencia libs/SocialAi.Core
+      # (Domain+Data compartilhados). Antes era ./apps (quando referenciava a API).
+      context: .
+      dockerfile: apps/worker/Dockerfile
+    restart: unless-stopped
+    environment:
+      DOTNET_ENVIRONMENT: ${DOTNET_ENVIRONMENT:-Development}
+      ConnectionStrings__Postgres: "Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      # A2: mesma chave de cifra da API — o worker decifra o token IG para publicar.
+      Secrets__EncryptionKey: ${SECRETS_ENCRYPTION_KEY}
+      Jwt__Secret: ${JWT_SECRET}
+      Agents__BaseUrl: "http://agents:4000"
+      Minio__Endpoint: "minio:9000"
+      Minio__AccessKey: ${MINIO_ROOT_USER}
+      Minio__SecretKey: ${MINIO_ROOT_PASSWORD}
+      # B2/S-06: URL PÚBLICA do MinIO (a Graph API baixa a imagem de lá). Obrigatória em modo graph.
+      Minio__PublicBaseUrl: ${MINIO_PUBLIC_BASE_URL:-}
+      Publisher__Mode: ${PUBLISHER_MODE:-mock}
+      # F6/E1: versão da Graph API (config, não hardcoded). A Meta expira versões ~2 anos após o
+      # release — atualize quando migrar. Default v22.0 = comportamento atual.
+      Instagram__GraphVersion: ${GRAPH_API_VERSION:-v22.0}
+    depends_on:
+      postgres: { condition: service_healthy }
+      # H8: só sobe depois da API saudável (a API aplica as migrations no boot).
+      api: { condition: service_healthy }
+    networks: [backbone]
+    # H9: o worker não tem porta HTTP (BackgroundService). Healthcheck = PID 1 vivo e sendo
+    # o dotnet (ENTRYPOINT). Lê /proc (sempre presente no Linux) — não exige procps/curl na imagem.
+    healthcheck:
+      test: ["CMD-SHELL", "grep -q dotnet /proc/1/comm || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # Microserviço de agentes (port do branding-os). /generate é ASYNC (job-id + poll).
+  # S-29: SEM porta publicada no host — só a API o alcança pela rede interna (backbone).
+  agents:
+    build:
+      context: ./services/agents
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 4000
+      AI_PROVIDER: ${AI_PROVIDER:-gemini}
+      AI_PROVIDER_KEY: ${AI_PROVIDER_KEY}
+      IMAGE_PROVIDER: ${IMAGE_PROVIDER:-gemini}
+      IMAGE_PROVIDER_KEY: ${IMAGE_PROVIDER_KEY}
+      # N4/S-29: exige x-internal-token nas chamadas de geração quando definido.
+      AGENTS_INTERNAL_TOKEN: ${AGENTS_INTERNAL_TOKEN:-}
+      # ADR-0011/0013: liga o override de system-prompt por workspace. Opt-in, default false.
+      # Sem esta linha, definir a flag no .env não chega ao container (Compose só injeta o que
+      # está listado em environment) e o recurso fica preso em false.
+      PROMPT_OVERRIDES_ENABLED: ${PROMPT_OVERRIDES_ENABLED:-false}
+      # (agents não usa MinIO — devolve imagens inline; quem grava no MinIO é o worker no publish.)
+    networks: [backbone]
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+      # A1: NEXT_PUBLIC_API_URL é build-time (inlinado no bundle pelo Next), não runtime.
+      # Trocar a URL da API do cliente exige rebuild: docker compose build web.
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5080}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    depends_on:
+      # QA-4: espera a API SAUDÁVEL (não só "iniciada") — a API aplica migrations no boot; subir a web
+      # antes disso causaria 1as requisições contra uma API ainda em transição. A API tem healthcheck.
+      api: { condition: service_healthy }
+    networks: [backbone]
+
+networks:
+  backbone:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  minio-data:

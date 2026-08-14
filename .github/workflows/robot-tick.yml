@@ -1,0 +1,76 @@
+# Gatilho EXTERNO do robô (free-tier: a API dorme e o PeriodicTimer interno não roda).
+# Chama POST /api/automation/run-tick nos horários de publicação — a requisição acorda a API e
+# dispara UM tick, que reavalia os gates soberanos (freio, horário local, budget, pauta). Idempotente:
+# fora da janela não gera nada, então disparar "a mais" é seguro (os gates são por CONTAGEM).
+#
+# ⚠️ POR QUE HÁ UM PASSO DE WARM-UP DO AGENTS ANTES DO RUN-TICK (lição de 2026-08-14):
+# No free-tier o serviço `agents` dorme após ~15min ociosos. O robô, ao chegar a hora do slot,
+# chama o agents para GERAR — se o agents está FRIO, a chamada paga um cold-start de ~20s e ANTES
+# do fix estourava o timeout → o robô pulava o slot ("agents indisponível"). O run-tick acordava só
+# a API, nunca o agents. Por isso este job agora ACORDA O AGENTS E ESPERA /health=200 ANTES de
+# chamar o run-tick — quando o robô for gerar, o agents já está quente. (Defesa em profundidade: o
+# AgentsStartClient também teve o timeout ampliado p/ 90s, então mesmo se o warm-up não completar a
+# tempo o robô ainda gera. Ver apps/api/Program.cs / apps/worker/Program.cs.)
+#
+# Contrato: precisa do secret RUN_TOKEN (Settings > Secrets > Actions), IGUAL ao Loop__RunToken no
+# Render. Sem match → 401. Sem token no servidor (Production) → 503.
+#
+# NOTA sobre o cron do GitHub Actions: NÃO é pontual (atrasa minutos a horas sob carga da
+# plataforma). Por isso o disparo cobre o DIA INTEIRO e quem decide "é hora?" é o APP, lendo a
+# agenda da tela (Configurações › Automação) — CATCH-UP por contagem (CountSlotsPassedToday): um
+# tick atrasado ainda recupera o slot no mesmo dia. Mudar horários na tela NÃO exige mexer aqui.
+# Para pontualidade de minuto, um cron-as-a-service externo (cron-job.org) pode apontar para o mesmo
+# endpoint — este workflow é a rede de segurança versionada.
+name: robot-tick
+
+on:
+  schedule:
+    # A cada 15min, o dia todo (minuto 8/23/38/53 foge da congestão do topo da hora no GH Actions).
+    # O tick é barato e idempotente (gates por contagem); tickar mais reduz o atraso do slot sem
+    # gerar em dobro. Na prática o GH Actions atrasa/pula parte dos agendamentos — o catch-up cobre.
+    - cron: "8,23,38,53 * * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: robot-tick
+  cancel-in-progress: false
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Acordar o agents (warm-up) antes de gerar
+        run: |
+          # O agents free dorme; aquecê-lo ANTES do run-tick evita que a geração estoure no cold-start.
+          # Best-effort: se não aquecer em ~90s, seguimos assim mesmo — o timeout de 90s do
+          # AgentsStartClient é a rede de segurança. Nunca falha o job por isto.
+          AG="https://social-ai-agents.onrender.com/health"
+          echo "Aquecendo agents ($AG)..."
+          for i in $(seq 1 6); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 40 "$AG" || echo "000")
+            echo "  tentativa $i -> HTTP $code"
+            [ "$code" = "200" ] && { echo "agents QUENTE."; break; }
+            sleep 5
+          done
+
+      - name: Disparar tick do robô (run-tick)
+        env:
+          RUN_TOKEN: ${{ secrets.RUN_TOKEN }}
+        run: |
+          if [ -z "$RUN_TOKEN" ]; then
+            echo "::error::RUN_TOKEN não configurado nos Secrets do repositório."
+            exit 1
+          fi
+          # --max-time 120 cobre o cold-start da API (a própria chamada acorda a API) + o tick (que
+          # pode disparar geração via agents, já aquecido acima). Não falha o job em erro transitório.
+          code=$(curl -s -o /tmp/resp.txt -w "%{http_code}" --max-time 120 \
+            -X POST "https://social-ai-api-83or.onrender.com/api/automation/run-tick" \
+            -H "x-run-token: $RUN_TOKEN" || echo "000")
+          echo "run-tick -> HTTP $code"
+          cat /tmp/resp.txt 2>/dev/null || true
+          # 200 = tick rodou; 401 = token errado; 503 = servidor sem token. Só 2xx é sucesso.
+          case "$code" in
+            2*) exit 0 ;;
+            *)  echo "::warning::run-tick retornou HTTP $code (ver corpo acima)"; exit 0 ;;
+          esac

@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# F7 — hook de sincronia de enums .NET ↔ TS.
+# Garante que apps/web/lib/_enums.generated.ts está em dia com a FONTE DA VERDADE
+# (libs/SocialAi.Core/Domain/Enums.cs) ANTES de cada commit. Os status de Content/Pauta
+# são inteiros crus que precisam casar entre os dois lados (não há contrato compartilhado);
+# este hook fecha o furo no momento do commit, complementando o teste de contrato (web suite).
+#
+# INSTALAÇÃO (uma vez por clone):
+#   git config core.hooksPath .githooks
+#
+# Bypass pontual (não recomendado): git commit --no-verify
+set -euo pipefail
+
+# Só roda se o Enums.cs OU o espelho gerado entraram no commit (barato; não atrasa commits triviais).
+staged=$(git diff --cached --name-only)
+case "$staged" in
+  *Enums.cs*|*_enums.generated.ts*)
+    echo "[pre-commit] enums tocados — verificando sincronia .NET↔TS…"
+    if ! node scripts/gen-enums.mjs --check; then
+      echo ""
+      echo "[pre-commit] BLOQUEADO: o espelho de enums está desatualizado."
+      echo "             Rode 'node scripts/gen-enums.mjs' e inclua o arquivo gerado no commit."
+      exit 1
+    fi
+    echo "[pre-commit] enums em dia."
+    ;;
+  *)
+    : # nada de enums no commit — nada a verificar.
+    ;;
+esac

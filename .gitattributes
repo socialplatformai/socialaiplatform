@@ -1,0 +1,4 @@
+# Scripts shell DEVEM usar LF mesmo em checkout no Windows — CRLF no shebang (#!/usr/bin/env bash\r)
+# quebra a execução em Linux/containers ("bad interpreter"). Os scripts de backup/restore rodam
+# dentro do stack Docker (Linux), então isto é correção de bug, não estética.
+*.sh text eol=lf

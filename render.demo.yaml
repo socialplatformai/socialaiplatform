@@ -1,0 +1,152 @@
+# Blueprint do Render — VARIANTE DEMO, FREE tier (sem worker, sem cartão).
+#
+# Use ESTE arquivo (`render.demo.yaml`) para uma demonstração GRATUITA da jornada de geração.
+# Para o PRODUTO COMPLETO (com worker 24/7: publicação agendada, métricas, loop autônomo) use o
+# `render.yaml` na raiz — planos pagos, pois o Render NÃO permite worker/cron no plano free
+# (https://render.com/docs/blueprint-spec → "free is not available for ... background workers").
+#
+# Sobe: web + api + agents + Postgres. A geração de conteúdo roda sob request (api⇄agents);
+# o worker 24/7 (publicação agendada, métricas, loop) fica de fora — não é free e não é
+# necessário para testar a jornada de geração. Publicação = modo de demonstração (mock).
+#
+# Como usar: render.com → New → Blueprint → conecta este repo → Apply.
+#
+# PASSO MANUAL OBRIGATÓRIO no FREE TIER (1x, após o 1º deploy) — comunicação entre serviços:
+#   No plano FREE, um serviço web NÃO recebe tráfego de rede PRIVADA (só envia). Como web→api e
+#   api→agents conversam, eles precisam se falar pela URL PÚBLICA (https://...onrender.com), e o
+#   Render não injeta a URL pública de um serviço irmão automaticamente. Então, após o 1º deploy:
+#     1. Copie a URL pública do serviço social-ai-api (topo da página dele no painel).
+#        → cole em social-ai-web › Environment › API_URL
+#     2. Copie a URL pública do serviço social-ai-agents.
+#        → cole em social-ai-api › Environment › Agents__BaseUrl
+#     3. Salve (cada save redeploya o serviço). Pronto: cadastro e geração funcionam.
+#   (Em plano PAGO a rede privada funciona — aí dá para usar fromService property:hostport e
+#    pular este passo. Ver comentários em API_URL / Agents__BaseUrl abaixo.)
+#
+# Depois, na UI da plataforma: criar conta (1º usuário = Admin) → Configurações › IA → colar
+# a chave do Gemini (https://aistudio.google.com/apikey) → gerar conteúdo de verdade.
+#
+# Nota sobre o free tier: serviços free "dormem" após ~15 min ociosos (1º acesso ~10-30s,
+# depois normal); o Postgres free expira em ~90 dias (recriável). Aceitável para demo.
+
+databases:
+  - name: social-ai-db
+    plan: free
+    postgresMajorVersion: "16"
+
+services:
+  # ── API .NET (pública; o web faz proxy /api/* para cá) ──────────────────────
+  - name: social-ai-api
+    type: web
+    runtime: docker
+    plan: free
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      # A API lê PORT (Program.cs) — o Render injeta. Não setar ASPNETCORE_URLS.
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: DOTNET_ENVIRONMENT
+        value: Production
+      # Connection string no formato .NET, montada dos campos do Postgres do Render.
+      - key: ConnectionStrings__Postgres
+        fromDatabase:
+          name: social-ai-db
+          property: connectionString
+      # Segredos gerados automaticamente (256-bit base64).
+      # ATENÇÃO ao nome: o .NET mapeia env→config por DUPLO underscore. O código lê
+      # cfg["Jwt:Secret"] e cfg["Secrets:EncryptionKey"] (Program.cs), logo as envs PRECISAM
+      # ser Jwt__Secret / Secrets__EncryptionKey — JWT_SECRET (underscore simples) NÃO é lido
+      # e o boot recusa (guarda A2). Ver ConnectionStrings__Postgres logo acima (mesma regra).
+      #
+      # generateValue: true já gera o valor UMA vez (na criação) e o PRESERVA entre deploys/syncs
+      # — o Render só cria se a env "doesn't already exist". É a salvaguarda nativa que protege
+      # Secrets__EncryptionKey de ser regenerada (o que invalidaria todos os segredos cifrados).
+      # NÃO combinar com sync:false — o schema do Render proíbe os dois juntos (generateValue já
+      # implica não-sincronizado do YAML).
+      - key: Jwt__Secret
+        generateValue: true
+      - key: Secrets__EncryptionKey
+        generateValue: true
+      # Token interno api→agents. Dois consumidores, duas convenções de nome para o MESMO valor
+      # (espelha o docker-compose): a API lê cfg["Agents:InternalToken"] (.NET → Agents__InternalToken);
+      # o agents lê process.env.AGENTS_INTERNAL_TOKEN (Node, literal). O valor canônico é gerado
+      # AQUI como Agents__InternalToken; o serviço agents o referencia e reexpõe com o nome Node.
+      # (Antes era AGENTS_INTERNAL_TOKEN aqui → a API não lia → header x-internal-token ausente →
+      # agents sem autenticação, com URL pública no free. Bug de segurança corrigido.)
+      - key: Agents__InternalToken
+        generateValue: true
+      # URL interna do agents (rede privada do Render). hostport = "host:porta".
+      # Agents__BaseUrl: a API chama o agents pela URL PÚBLICA (https://...onrender.com), NÃO
+      # pela rede privada. Motivo: no Render FREE, um serviço web NÃO recebe tráfego de rede
+      # privada (só envia) — então api(free)→agents(free) via hostport interno falha. A saída
+      # para a internet pública funciona, e o agents público é protegido por AGENTS_INTERNAL_TOKEN.
+      # O Render NÃO expõe a URL pública de um serviço irmão via fromService, então este valor é
+      # MANUAL: após o 1º deploy, copie a URL pública do serviço social-ai-agents (topo da página
+      # dele no painel) e cole aqui no painel da API. sync:false preserva o valor entre deploys.
+      # (Em plano PAGO a rede privada funciona — aí dá para voltar a fromService property:hostport.)
+      - key: Agents__BaseUrl
+        sync: false
+      # Publicação em modo de demonstração (mock). Flip para graph é config + App Review Meta.
+      - key: Publisher__Mode
+        value: mock
+      # CORS — OBRIGATÓRIO neste modo (browser → API direto). O browser faz cross-origin do
+      # domínio do web para o domínio da API, então a API precisa autorizar a origem do web.
+      # A API usa WithOrigins (match EXATO: scheme+host, sem barra final). MANUAL (sync:false):
+      # após o 1º deploy, copie a URL pública do serviço social-ai-web
+      # (https://social-ai-web-xxxx.onrender.com) e cole aqui no painel da API. Sem isto, o
+      # browser recebe erro de CORS e a UI não carrega dados.
+      - key: Cors__WebOrigin
+        sync: false
+
+  # ── Agents (Node; type web porque free não permite private service) ─────────
+  # Fica com URL pública, MAS protegido por AGENTS_INTERNAL_TOKEN — só a API, que tem o
+  # mesmo token, consegue disparar o pipeline.
+  - name: social-ai-agents
+    type: web
+    runtime: docker
+    plan: free
+    dockerfilePath: ./services/agents/Dockerfile
+    dockerContext: ./services/agents
+    healthCheckPath: /health
+    envVars:
+      # O agents lê process.env.PORT (server.ts) — o Render injeta.
+      - key: NODE_ENV
+        value: production
+      # Mesmo valor do token gerado na API (agora chamado lá de Agents__InternalToken), mas
+      # reexposto a este processo Node com o nome que o server.ts lê: process.env.AGENTS_INTERNAL_TOKEN.
+      - key: AGENTS_INTERNAL_TOKEN
+        fromService:
+          name: social-ai-api
+          type: web
+          envVarKey: Agents__InternalToken
+      # AI_PROVIDER_KEY fica VAZIO — a chave de IA é cadastrada pela UI (cifrada no servidor)
+      # e injetada por workspace no payload ao agents (BuildAiOverrideAsync → mergeAiOverride).
+
+  # ── Web (Next standalone; proxy /api/* → API em runtime) ────────────────────
+  - name: social-ai-web
+    type: web
+    runtime: docker
+    plan: free
+    dockerfilePath: ./apps/web/Dockerfile
+    dockerContext: ./apps/web
+    healthCheckPath: /healthz
+    envVars:
+      # MODO DIRETO (browser → API pública), NÃO proxy. Por quê: no Render FREE, NENHUM caminho
+      # web→api server-side funciona — rede privada (free não RECEBE) e URL pública (o Cloudflare
+      # bloqueia container→container com "DNS points to prohibited IP" / error 1000, proteção
+      # anti-SSRF). A saída no free é o BROWSER (cliente externo, não-container) chamar a API
+      # pública direto — o Cloudflare permite, pois a origem é externa. Exige CORS na API
+      # (Cors__WebOrigin) e a URL da API no build do web (NEXT_PUBLIC_*, congelado em build-time).
+      # (Em plano PAGO, a rede privada funciona e dá para voltar ao proxy: NEXT_PUBLIC_API_PROXY=true
+      #  + API_URL=fromService hostport. Ver histórico nos comentários.)
+      - key: NEXT_PUBLIC_API_PROXY
+        value: "false"
+      # URL pública da API, que o BROWSER chama. É NEXT_PUBLIC_* → inlinada no BUILD do web, então
+      # precisa estar definida ANTES do build (rebuild ao trocar). MANUAL (sync:false): após o 1º
+      # deploy, copie a URL pública do serviço social-ai-api (https://social-ai-api-xxxx.onrender.com,
+      # topo da página dele no painel) e cole aqui no painel do web → isso dispara o rebuild com a
+      # URL embutida. Sem barra final.
+      - key: NEXT_PUBLIC_API_URL
+        sync: false

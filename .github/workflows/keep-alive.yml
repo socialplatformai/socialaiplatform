@@ -1,0 +1,39 @@
+# Keep-alive dos serviços free do Render (web/api/agents dormem após ~15min ociosos).
+# Pinga /health a cada ~10min para manter o processo acordado — sem isso, o primeiro acesso
+# após o sono toma um cold-start de ~10-30s e o proxy do Render pode devolver 502, além de o
+# timer do worker-in-API (publicação agendada) só rodar quando alguém abre a UI.
+#
+# Contrato: nenhum segredo necessário (são GETs públicos em /health). Falha de um serviço não
+# derruba os outros (cada passo é independente e tolerante a erro). Não é um teste — só warm-up.
+name: keep-alive
+
+on:
+  schedule:
+    # A cada 10 minutos. Nota: o cron do GitHub Actions NÃO é exato (pode atrasar minutos sob
+    # carga da plataforma); 10min dá margem confortável vs a janela de sono de 15min do Render.
+    - cron: "*/10 * * * *"
+  # Permite disparar manualmente pela aba Actions (ex.: aquecer antes de um teste).
+  workflow_dispatch:
+
+# Evita filas sobrepostas se um run atrasar e o próximo começar.
+concurrency:
+  group: keep-alive
+  cancel-in-progress: true
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping serviços (health)
+        run: |
+          urls=(
+            "https://social-ai-api-83or.onrender.com/health"
+            "https://social-ai-agents.onrender.com/health"
+            "https://social-ai-web-ohny.onrender.com"
+          )
+          for u in "${urls[@]}"; do
+            # --max-time 60 cobre o cold-start; || true para um serviço lento não falhar o job inteiro.
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 "$u" || echo "000")
+            echo "$u -> HTTP $code"
+          done

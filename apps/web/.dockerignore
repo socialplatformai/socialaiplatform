@@ -1,0 +1,23 @@
+# Evita copiar node_modules instalados no host Windows para o contexto de build Linux,
+# o que causaria incompatibilidade de binários nativos (ex: sharp, bcrypt) e builds lentos.
+node_modules
+
+# .next contém artefatos de build do host; o Dockerfile re-executa `next build` dentro do container.
+.next
+
+# Histórico git não é necessário em nenhuma imagem de produção.
+.git
+.gitignore
+
+# Logs não devem ir para a imagem.
+*.log
+npm-debug.log*
+
+# Variáveis de ambiente locais nunca devem entrar na imagem — use secrets do compose/k8s.
+.env
+.env.*
+!.env.example
+
+# Artefatos de build alternativos.
+dist
+out

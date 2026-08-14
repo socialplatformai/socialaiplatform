@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>SocialAi.Api</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.8" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.8">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.4" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.8" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.8" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.7.3" />
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+    <!-- E11.5 (ADR-0006): conversão PNG→JPEG no export ZIP. Mesma versão pinada no worker
+         (CVE-safe); aqui usamos só o snippet de conversão, não o MediaService (MinIO). -->
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
+    <!-- Gargalo nº1: materializar imagem de slide no MinIO na geração (ISlideImageStore) + servir
+         por proxy presigned-on-demand. Mesma versão do worker. -->
+    <PackageReference Include="Minio" Version="6.0.3" />
+  </ItemGroup>
+
+  <!-- H4/S-23: Domain + Data + ICurrentWorkspace + SecretProtector + Migrations vivem em Core. -->
+  <ItemGroup>
+    <ProjectReference Include="../../libs/SocialAi.Core/SocialAi.Core.csproj" />
+    <!-- Worker-in-API (deploy free-tier): a API pode HOSPEDAR os jobs do worker no mesmo processo
+         (flag RunWorkerInProcess), evitando um serviço pago só p/ o worker no Render. Reusa as
+         classes de job/publishing do worker (o Main top-level do worker, numa DLL referenciada, não
+         compete pelo entrypoint da API — build verificado). -->
+    <ProjectReference Include="../worker/Worker.csproj" />
+  </ItemGroup>
+
+  <!-- Worker-in-API: a API e o worker têm cada um seu appsettings.json. Ao publicar a API com a
+       referência ao worker, ambos colidem no output (NETSDK1152) e o do worker poderia sobrescrever
+       o da API. A API só quer as CLASSES do worker, não sua config — então removemos do publish da
+       API qualquer appsettings.json cujo caminho de origem passe por "worker". O appsettings.json da
+       API permanece; a config real (api e worker-in-api) vem de env vars no Render. NÃO toca no
+       Worker.csproj, então o worker DEDICADO continua publicando o seu appsettings.json normalmente. -->
+  <Target Name="RemoveWorkerAppSettingsFromApiPublish" AfterTargets="ComputeFilesToPublish">
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)"
+        Condition="'%(Filename)%(Extension)' == 'appsettings.json' And $([System.String]::Copy('%(ResolvedFileToPublish.FullPath)').Replace('\','/').Contains('/worker/'))" />
+    </ItemGroup>
+  </Target>
+
+</Project>

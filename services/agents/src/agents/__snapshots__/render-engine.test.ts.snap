@@ -1,0 +1,610 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`RenderEngine — não-regressão sem designSpec (AC4) > render() sem designSpec produz output estável (snapshot baseline) 1`] = `
+"
+        .slide-1 {
+          position: relative;
+          width: 1080px;
+          height: 1350px;
+          overflow: hidden;
+          background-color: var(--bd-background, #000000);
+        }
+
+        
+
+        
+        /* Cover Template Layout - Figma Node 35:1321 - ABSOLUTE POSITIONING */
+        .slide-content-cover {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          z-index: 10;
+        }
+
+        /* Header - ABSOLUTE: top: 80px */
+        .cover-header {
+          position: absolute;
+          top: 80px;
+          left: 80px;
+          right: 80px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .cover-header-text {
+          font-family: var(--bd-font-heading, 'Inter'), sans-serif;
+          font-size: 18px;
+          font-weight: 600;
+          line-height: 21.78px;
+          color: var(--bd-on-image, #FFFFFF);
+          letter-spacing: 0px;
+        }
+
+        /* Text wrapper - FLEXBOX positioned at bottom for consistent spacing */
+        .cover-text-wrapper {
+          position: absolute;
+          bottom: 90px;
+          left: 80px;
+          width: 920px;
+          display: flex;
+          flex-direction: column;
+          gap: 32px; /* Consistent 32px gap between headline and subtitle */
+        }
+
+        /* Headline - flows naturally inside wrapper */
+        .cover-title {
+          font-family: var(--bd-font-heading, 'Inter'), sans-serif;
+          font-size: 96px;
+          font-weight: 600;
+          line-height: 104px;
+          letter-spacing: 0px;
+          color: var(--bd-on-image, #FFFFFF);
+          text-align: left;
+          margin: 0;
+        }
+
+        /* Subtitle - flows naturally below headline with 32px gap */
+        .cover-subtitle {
+          font-family: var(--bd-font-heading, 'Inter'), sans-serif;
+          font-size: 32px;
+          font-weight: 600;
+          line-height: 40px;
+          color: var(--bd-muted, #969696);
+          text-align: left;
+          margin: 0;
+        }
+
+        /* GRADIENT OVERLAY - Figma exact: starts at y=42.78%, diagonal to bottom-left (208deg) */
+        .cover-overlay {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(
+            208deg,
+            transparent 0%,
+            transparent 42%,
+            rgba(0,0,0,0.2) 48%,
+            rgba(0,0,0,0.7) 55%,
+            rgba(0,0,0,1) 62%,
+            rgba(0,0,0,1) 100%
+          );
+          z-index: 2;
+        }
+
+        /* Top gradient - subtle fade at top */
+        .cover-top-gradient {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 13%;
+          background: linear-gradient(to bottom, rgba(0,0,0,0.32) 0%, rgba(0,0,0,0) 100%);
+          z-index: 3;
+        }
+
+        /* Arrow button - ABSOLUTE: bottom: 84px, right: 83px (Figma exact) */
+        .cover-arrow-btn {
+          position: absolute;
+          bottom: 84px;
+          right: 83px;
+          width: 80px;
+          height: 48px;
+          z-index: 20;
+        }
+
+        .cover-arrow-btn img {
+          width: 100%;
+          height: 100%;
+        }
+      
+      
+
+        .slide-2 {
+          position: relative;
+          width: 1080px;
+          height: 1350px;
+          background-color: var(--bd-background, #000000);
+          overflow: hidden;
+        }
+        
+        /* Body Template Layout - Figma Node 28:1018 - ABSOLUTE POSITIONING */
+
+        .slide-content-body {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          z-index: 2;
+        }
+
+        /* Vertical stripe pattern - using listras-fundo.svg */
+        .body-stripes {
+          position: absolute;
+          top: 80px;
+          left: 79px;
+          right: 79px;
+          height: 1190px;
+          background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2248%22%20height%3D%2248%22%20viewBox%3D%220%200%2048%2048%22%0A%20%20%20%20preserveAspectRatio%3D%22none%22%3E%3Cg%20stroke%3D%22currentColor%22%20stroke-width%3D%221%22%20opacity%3D%220.06%22%3E%0A%20%20%20%20%3Cline%20x1%3D%2212%22%20y1%3D%220%22%20x2%3D%2212%22%20y2%3D%2248%22%2F%3E%3Cline%20x1%3D%2224%22%20y1%3D%220%22%20x2%3D%2224%22%20y2%3D%2248%22%2F%3E%0A%20%20%20%20%3Cline%20x1%3D%2236%22%20y1%3D%220%22%20x2%3D%2236%22%20y2%3D%2248%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
+          background-repeat: repeat-x;
+          background-position: center;
+          background-size: 923px 100%;
+          pointer-events: none;
+          z-index: 1;
+          color: var(--bd-ink, #FFFFFF);
+        }
+
+        /* Header - ABSOLUTE: top: 80px (Figma exact) */
+        .body-header {
+          position: absolute;
+          top: 80px;
+          left: 80px;
+          right: 80px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          z-index: 10;
+        }
+
+        .body-header-text {
+          font-family: var(--bd-font-heading, 'Inter'), sans-serif;
+          font-size: 18px;
+          font-weight: 600;
+          line-height: 21.78px;
+          color: var(--bd-muted, #646464);
+          letter-spacing: 0px;
+        }
+
+        /* Text container - FLEXBOX for proper spacing regardless of line count */
+        .body-text-wrapper {
+          position: absolute;
+          top: 223px;
+          left: 157px;
+          width: 770px;
+          display: flex;
+          flex-direction: column;
+          gap: 20px; /* Consistent 20px gap between headline and body */
+          z-index: 10;
+        }
+
+        /* Headline - now flows naturally inside wrapper */
+        .body-headline {
+          font-family: var(--bd-font-heading, 'Inter'), sans-serif;
+          font-size: 48px;
+          font-weight: 600;
+          line-height: 58px;
+          color: var(--bd-on-image, #FFFFFF);
+          margin: 0;
+        }
+
+        /* Body text - now flows naturally below headline with 20px gap */
+        .body-text {
+          font-family: var(--bd-font-heading, 'Inter'), sans-serif;
+          font-size: 32px;
+          font-weight: 600;
+          line-height: 38px;
+          color: var(--bd-muted, #888888);
+          white-space: pre-line;
+          margin: 0;
+        }
+
+        /* Bullet List - flows naturally below headline */
+        .body-list {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+        }
+
+        .body-list li {
+          font-family: var(--bd-font-heading, 'Inter'), sans-serif;
+          font-size: 32px;
+          font-weight: 600;
+          line-height: 38px;
+          color: var(--bd-muted, #888888);
+          margin-bottom: 24px;
+          display: flex;
+          align-items: flex-start;
+          gap: 16px;
+        }
+
+        /* Checkbox icon - using checked.svg (40x40) */
+        .body-list li::before {
+          content: "";
+          display: block;
+          width: 40px;
+          height: 40px;
+          background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2240%22%20height%3D%2240%22%20viewBox%3D%220%200%2040%2040%22%20fill%3D%22none%22%3E%0A%20%20%20%20%3Ccircle%20cx%3D%2220%22%20cy%3D%2220%22%20r%3D%2218%22%20stroke%3D%22currentColor%22%20stroke-width%3D%222.5%22%20opacity%3D%220.35%22%2F%3E%0A%20%20%20%20%3Cpath%20d%3D%22M12%2020.5l5.5%205.5L28%2014%22%20stroke%3D%22currentColor%22%20stroke-width%3D%223%22%0A%20%20%20%20%20%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%0A%20%20%3C%2Fsvg%3E");
+          background-size: contain;
+          background-repeat: no-repeat;
+          flex-shrink: 0;
+          color: var(--bd-accent, #FFD44A);
+        }
+
+        /* Stat block (layout stat-highlight) — número grande de destaque + contexto sutil,
+           a partir dos papéis 'stat'/'statContext'. */
+        .body-stat {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .body-stat-number {
+          font-family: var(--bd-font-heading, 'Inter'), sans-serif;
+          font-size: 120px;
+          font-weight: 700;
+          line-height: 1.05;
+          color: var(--bd-accent, #FFD44A);
+          letter-spacing: -2px;
+        }
+
+        .body-stat-context {
+          font-family: var(--bd-font-heading, 'Inter'), sans-serif;
+          font-size: 28px;
+          font-weight: 600;
+          line-height: 34px;
+          color: var(--bd-muted, #888888);
+        }
+
+        /* Quote block (layout testimonial) — citação + autoria. Honra 'quote'/'attribution'. */
+        .body-quote {
+          margin: 0;
+          border-left: 4px solid var(--bd-accent, #FFD44A);
+          padding-left: 28px;
+        }
+
+        .body-quote-text {
+          font-family: var(--bd-font-heading, 'Inter'), sans-serif;
+          font-size: 36px;
+          font-weight: 600;
+          line-height: 46px;
+          color: var(--bd-on-image, #FFFFFF);
+          margin: 0;
+        }
+
+        .body-quote-attrib {
+          font-family: var(--bd-font-heading, 'Inter'), sans-serif;
+          font-size: 22px;
+          font-weight: 600;
+          line-height: 28px;
+          color: var(--bd-muted, #888888);
+          margin-top: 16px;
+        }
+
+        /* CTA inline no corpo (ex.: oferta) — pílula com a cor de destaque da marca. */
+        .body-cta {
+          align-self: flex-start;
+          font-family: var(--bd-font-heading, 'Inter'), sans-serif;
+          font-size: 26px;
+          font-weight: 600;
+          line-height: 32px;
+          color: var(--bd-background, #1A1A1A);
+          background-color: var(--bd-accent, #FFD44A);
+          padding: 20px 40px;
+          border-radius: var(--bd-radius-pill, 999px);
+        }
+
+        /* IMAGE - ABSOLUTE: top: 519px, left: 80px (Figma exact - CRITICAL FIX) */
+        .body-image-container {
+          position: absolute;
+          top: 519px;
+          left: 80px;
+          width: 924px;
+          height: 634px;
+          border-radius: 16px;
+          overflow: hidden;
+          z-index: 5;
+        }
+
+        .body-image {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          object-position: center center;
+        }
+
+        /* Pagination - ABSOLUTE: y=1239, x=80 (Figma Frame 159) */
+        .body-pagination {
+          position: absolute;
+          top: 1239px;
+          left: 80px;
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          z-index: 20;
+        }
+
+        .pagination-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          /* dots = "outros slides" (neutros) → muted da marca; fallback byte-idêntico ao Figma. */
+          background-color: var(--bd-muted, #484848);
+        }
+
+        .pagination-number {
+          font-family: var(--bd-font-heading, 'Inter'), sans-serif;
+          font-size: 18px;
+          font-weight: 600;
+          line-height: 21.78px;
+          color: var(--bd-accent, #FFD44A);
+        }
+
+        /* Swipe pill button - ABSOLUTE: y=1214, right=80 (Figma Frame 156) */
+        .swipe-pill {
+          position: absolute;
+          top: 1214px;
+          right: 80px;
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          padding: 4px 4px 4px 32px;
+          background-color: #242424;
+          border-radius: 2000px;
+          z-index: 20;
+        }
+
+        .swipe-text {
+          font-family: var(--bd-font-heading, 'Inter'), sans-serif;
+          font-size: 18px;
+          font-weight: 600;
+          line-height: 21.78px;
+          color: #646464;
+        }
+
+        /* Arrow button - using seta-deslize.svg */
+        .swipe-arrow-btn {
+          width: 80px;
+          height: 48px;
+        }
+
+        .swipe-arrow-btn img {
+          width: 100%;
+          height: 100%;
+        }
+      
+      
+
+        .slide-3 {
+          position: relative;
+          width: 1080px;
+          height: 1350px;
+          background-color: var(--bd-accent, #FFD44A);
+          overflow: hidden;
+        }
+        
+        /* Final Template Layout - Figma Node 35:1335 - ABSOLUTE POSITIONING */
+
+        .slide-content-last {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          z-index: 2;
+        }
+
+        /* Vertical stripe pattern - very subtle (opacity 0.02) — inline data-URI (PR5) */
+        .last-stripes {
+          position: absolute;
+          top: 80px;
+          left: 79px;
+          right: 79px;
+          height: 1190px;
+          background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2248%22%20height%3D%2248%22%20viewBox%3D%220%200%2048%2048%22%0A%20%20%20%20preserveAspectRatio%3D%22none%22%3E%3Cg%20stroke%3D%22currentColor%22%20stroke-width%3D%221%22%20opacity%3D%220.06%22%3E%0A%20%20%20%20%3Cline%20x1%3D%2212%22%20y1%3D%220%22%20x2%3D%2212%22%20y2%3D%2248%22%2F%3E%3Cline%20x1%3D%2224%22%20y1%3D%220%22%20x2%3D%2224%22%20y2%3D%2248%22%2F%3E%0A%20%20%20%20%3Cline%20x1%3D%2236%22%20y1%3D%220%22%20x2%3D%2236%22%20y2%3D%2248%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
+          background-repeat: repeat-x;
+          background-position: center;
+          background-size: 923px 100%;
+          color: var(--bd-text, #000000);
+          opacity: 0.02;
+          pointer-events: none;
+          z-index: 1;
+        }
+
+        /* Header - ABSOLUTE: top: 80px (Figma exact) */
+        .last-header {
+          position: absolute;
+          top: 80px;
+          left: 80px;
+          right: 80px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          z-index: 10;
+        }
+
+        .last-header-text {
+          font-family: var(--bd-font-heading, 'Inter'), sans-serif;
+          font-size: 18px;
+          font-weight: 600;
+          line-height: 21.78px;
+          color: var(--bd-accent, #D0A711);
+          letter-spacing: 0px;
+        }
+
+        /* Text wrapper - FLEXBOX for consistent spacing */
+        .last-text-wrapper {
+          position: absolute;
+          top: 228px;
+          left: 158px;
+          width: 770px;
+          display: flex;
+          flex-direction: column;
+          gap: 20px; /* Consistent gap between headline and body */
+          z-index: 10;
+        }
+
+        /* Headline - flows naturally inside wrapper */
+        .last-headline {
+          font-family: var(--bd-font-heading, 'Inter'), sans-serif;
+          font-size: 48px;
+          font-weight: 600;
+          line-height: 58px;
+          color: var(--bd-text, #000000);
+          margin: 0;
+        }
+
+        /* Body - flows naturally below headline with 20px gap */
+        .last-body {
+          font-family: var(--bd-font-heading, 'Inter'), sans-serif;
+          font-size: 32px;
+          font-weight: 600;
+          line-height: 38.73px;
+          color: var(--bd-text, #242424);
+          margin: 0;
+        }
+
+        /* CTA Button - ABSOLUTE: top: 562px, left: 158px (Figma exact) */
+        .last-cta-btn {
+          position: absolute;
+          top: 562px;
+          left: 158px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          padding: 32px 48px;
+          background: rgba(255, 255, 255, 0.08);
+          border: 1px solid transparent;
+          border-radius: 200px;
+          backdrop-filter: blur(4px);
+          z-index: 10;
+          /* Gradient border - diagonal from top-left to bottom-right */
+          background-image: linear-gradient(rgba(255,255,255,0.08), rgba(255,255,255,0.08)),
+                            linear-gradient(135deg, rgba(255,255,255,0.48) 0%, rgba(255,255,255,0.16) 51%, rgba(255,255,255,0.48) 100%);
+          background-origin: border-box;
+          background-clip: padding-box, border-box;
+        }
+
+        .last-cta-icon {
+          width: 24px;
+          height: 24px;
+        }
+
+        .last-cta-text {
+          font-family: var(--bd-font-heading, 'Inter'), sans-serif;
+          font-size: 24px;
+          font-weight: 600;
+          line-height: 29px;
+          color: var(--bd-text, #000000);
+        }
+
+        /* IMAGE - ABSOLUTE: top: 687px, left: 80px (Figma exact) */
+        .last-image-container {
+          position: absolute;
+          top: 687px;
+          left: 80px;
+          width: 924px;
+          height: 583px;
+          border-radius: 8px;
+          overflow: hidden;
+          z-index: 5;
+        }
+
+        .last-image {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          object-position: center center;
+        }
+      
+      
+/* Branding OS Generated Styles */
+/* Generated at: <normalizado>*/
+
+:root {
+  /* Brand Colors */
+  --color-background: #1A1A1A;
+  --color-text: #FFFFFF;
+  --color-accent: #C9B298;
+
+  /* Brand Fonts */
+  --font-heading: 'Inter', sans-serif;
+  --font-body: 'Source Serif 4', sans-serif;
+
+  /* Spacing */
+  --spacing-margin: 80px;
+}
+
+/* Base Reset */
+.slide * {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Element Base */
+.element {
+  display: block;
+}
+
+/* Text Elements */
+.element-headline {
+  font-family: var(--font-heading);
+}
+
+.element-subheadline {
+  font-family: var(--font-heading);
+}
+
+.element-body {
+  font-family: var(--font-body);
+}
+
+.element-caption {
+  font-family: var(--font-body);
+}
+
+.element-stat {
+  font-family: var(--font-heading);
+}
+
+/* CTA Button */
+.cta-button {
+  font-family: var(--font-heading);
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.cta-button:hover {
+  transform: scale(1.02);
+  opacity: 0.9;
+}
+
+/* Bullet Points */
+.element-bullets {
+  list-style: none;
+}
+
+.element-bullets li {
+  margin-bottom: var(--spacing-gap-small);
+}
+
+/* Quote */
+.element-quote {
+  font-style: italic;
+}
+
+/* Responsive (for preview) */
+@media (max-width: 1080px) {
+  .slide {
+    transform-origin: top left;
+    transform: scale(calc(100vw / 1080));
+  }
+}
+"
+`;

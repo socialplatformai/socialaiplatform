@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Social AI Platform — Guia de Menus</title>
+  <link rel="stylesheet" href="assets/apex-pdf.css">
+  <style>
+    /* ── Complementos deste documento (tokens do apex-pdf.css preservados) ── */
+    .menu-path { font-family: 'SF Mono','Consolas',monospace; font-size: 8.5pt; color: var(--ink-3);
+      background: var(--canvas-3); padding: 2px 8px; border-radius: 6px; display: inline-block;
+      vertical-align: middle; }
+    .area-head { display: flex; align-items: baseline; gap: 12px; margin-top: 6px; }
+    .area-num { font-size: 26pt; font-weight: 600; color: var(--slate-2); line-height: 1; }
+    .area-head h2 { margin: 0; font-size: 19pt; }
+
+    /* Moldura de navegador para os prints */
+    .shot { margin: 12px 0 4px 0; border-radius: 12px; overflow: hidden;
+      border: 1px solid rgba(27,31,46,0.14); box-shadow: 0 10px 28px rgba(27,31,46,0.14);
+      page-break-inside: avoid; background: var(--white); }
+    .shot-bar { display: flex; align-items: center; gap: 8px; height: 24px; padding: 0 12px;
+      background: var(--canvas-2); border-bottom: 1px solid rgba(27,31,46,0.08); }
+    .shot-bar .d { width: 8px; height: 8px; border-radius: 50%; }
+    .shot-bar .d1 { background: #E8A9A9; } .shot-bar .d2 { background: #EDD3A2; } .shot-bar .d3 { background: #B4D8B7; }
+    .shot-bar .u { margin-left: 8px; font-family: 'SF Mono','Consolas',monospace; font-size: 7.5pt;
+      color: var(--slate); background: var(--white); border-radius: 6px; padding: 1px 10px; }
+    .shot img { display: block; width: 100%; }
+    .shot.h60 img { max-height: 60mm; object-fit: cover; object-position: top; }
+    .shot.h78 img { max-height: 78mm; object-fit: cover; object-position: top; }
+    .figcap { font-size: 8.5pt; color: var(--slate); margin: 4px 2px 14px 2px; }
+    .figcap strong { color: var(--ink-3); }
+
+    /* Lista "o que tem nesta tela" */
+    .keys { margin: 8px 0 0 0; padding: 0; list-style: none; }
+    .keys li { display: flex; gap: 9px; margin: 5px 0; page-break-inside: avoid; }
+    .keys .b { flex: 0 0 auto; width: 7px; height: 7px; border-radius: 50%;
+      background: var(--pastel-lilac); margin-top: 5px; border: 1px solid rgba(27,31,46,0.18); }
+    .fam { display: inline-block; font-size: 7.5pt; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.08em; padding: 2px 9px; border-radius: 999px; color: var(--ink-2);
+      border: 1px solid rgba(27,31,46,0.15); background: var(--paper); }
+    .grid2 { display: flex; gap: 12px; } .grid2 > div { flex: 1; min-width: 0; }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════ CAPA ══════════════════════════════ -->
+<div class="cover">
+  <div class="cover-top">
+    <div class="logo-mark"></div>
+    <div class="logo-word">Social AI Platform</div>
+  </div>
+  <div class="cover-deco"></div>
+  <div class="cover-center">
+    <div class="eyebrow">Guia de menus · Ilustrado</div>
+    <h1>Todos os menus,<br>tela a tela</h1>
+    <div class="cover-band"></div>
+    <p class="cover-sub">Referência visual completa da navegação: cada área do menu com a tela
+      real, o que ela faz e como o robô de automação é controlado por ela.</p>
+  </div>
+  <div class="cover-meta">
+    <div><div class="k">Documento</div><div class="v">Guia de menus</div></div>
+    <div><div class="k">Versão</div><div class="v">2.0</div></div>
+    <div><div class="k">Data</div><div class="v">Julho de 2026</div></div>
+    <div><div class="k">Público</div><div class="v">Operador do produto</div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════ SUMÁRIO ══════════════════════════════ -->
+<div class="section">
+  <div class="eyebrow">Sumário</div>
+  <h2 style="margin-top:4px">O que você vai encontrar</h2>
+  <div style="margin-top:14px">
+    <div class="toc-item"><span>Mapa da navegação — como o menu é organizado</span><span class="n">03</span></div>
+    <div class="toc-item"><span>1 · Início — o painel do dia</span><span class="n">04</span></div>
+    <div class="toc-item"><span>2 · Conteúdo — Pautas · Ideias · Gerar</span><span class="n">05</span></div>
+    <div class="toc-item"><span>3 · Revisão &amp; Agenda — Aprovações · Calendário</span><span class="n">08</span></div>
+    <div class="toc-item"><span>4 · Publicação — falhas e reenvio</span><span class="n">09</span></div>
+    <div class="toc-item"><span>5 · Desempenho — Insights · Histórico</span><span class="n">10</span></div>
+    <div class="toc-item"><span>6 · Marca &amp; Ajustes — todas as configurações</span><span class="n">12</span></div>
+    <div class="toc-item"><span>7 · Automação — o painel do robô</span><span class="n">15</span></div>
+    <div class="toc-item"><span>Apêndice — como o robô decide publicar</span><span class="n">17</span></div>
+  </div>
+  <div class="callout" style="margin-top:22px">
+    <strong>Como usar este guia.</strong> Cada seção corresponde a um item do menu lateral, na
+    mesma ordem em que ele aparece na tela, sempre com a <strong>tela real</strong> ao lado da
+    explicação. O caminho da página aparece assim: <span style="white-space:nowrap"><span class="menu-path">/pautas</span>.</span>
+    Para um passo a passo de uso (do zero à primeira publicação), consulte o
+    <em>Manual do Cliente</em>, que acompanha este documento.
+  </div>
+</div>
+
+<div class="pb"></div>
+
+<!-- ══════════════════════════════ MAPA DA NAVEGAÇÃO ══════════════════════════════ -->
+<div class="section">
+  <div class="eyebrow">Mapa da navegação</div>
+  <h2 style="margin-top:4px">Seis áreas, na ordem do seu fluxo de trabalho</h2>
+  <p>O menu lateral organiza a plataforma em <strong>6 áreas</strong>, seguindo o ciclo de vida do
+    conteúdo: <em>ideia → pauta → geração → revisão → publicação → aprendizado</em>. A área ativa
+    fica destacada em preto; o trilho <strong>“Ciclo”</strong> no rodapé do menu mostra em que
+    etapa do funil você está. No topo, o <strong>seletor de marca</strong> define o contexto:
+    tudo o que você vê pertence à marca selecionada.</p>
+
+  <table>
+    <tr><th style="width:24%">Área</th><th style="width:30%">Sub-menus</th><th>Para quê</th></tr>
+    <tr><td><strong>Início</strong></td><td>—</td><td>O painel do dia: o que precisa de você agora</td></tr>
+    <tr><td><strong>Conteúdo</strong></td><td>Pautas · Ideias · Gerar</td><td>Alimentar a fila e criar as peças</td></tr>
+    <tr><td><strong>Revisão &amp; Agenda</strong></td><td>Aprovações · Calendário</td><td>Decidir o que sai e quando</td></tr>
+    <tr><td><strong>Publicação</strong></td><td>—</td><td>Acompanhar falhas de envio e reenviar</td></tr>
+    <tr><td><strong>Desempenho</strong></td><td>Insights · Histórico</td><td>Ver o que funcionou e o que foi feito</td></tr>
+    <tr><td><strong>Marca &amp; Ajustes</strong></td><td>Marca · IA · Conexões · Conta</td><td>Configurar tudo — inclusive o robô</td></tr>
+  </table>
+
+  <div class="callout ok">
+    <strong>Busca rápida.</strong> No topo de qualquer tela, o botão <em>Buscar (⌘K)</em> abre a
+    paleta de comandos: digite o nome de qualquer menu ou ação e vá direto, sem navegar.
+  </div>
+</div>
+
+<div class="pb"></div>
+
+<!-- ══════════════════════════════ 1 · INÍCIO ══════════════════════════════ -->
+<div class="section">
+  <div class="area-head"><span class="area-num">1</span><h2>Início</h2>
+    <span class="menu-path">/dashboard</span></div>
+  <p style="margin-top:8px">A primeira tela após o login e o ponto de retorno diário. Em vez de
+    estatísticas decorativas, responde a uma pergunta: <strong>“o que precisa de você?”</strong></p>
+
+  <div class="shot"><div class="shot-bar"><span class="d d1"></span><span class="d d2"></span><span class="d d3"></span><span class="u">app › Início</span></div>
+    <img src="assets/prints/dashboard.png" alt="Tela Início"></div>
+  <p class="figcap"><strong>Figura 1.</strong> O painel do dia: resumo da fila, melhor janela de
+    publicação, agendados da semana, status do Instagram e atalhos.</p>
+
+  <ul class="keys">
+    <li><span class="b"></span><span><strong>Linha de status</strong> — fila de aprovação, melhor
+      janela de horário (aprendida das métricas) e quantas peças estão agendadas para os próximos 7 dias.</span></li>
+    <li><span class="b"></span><span><strong>Aguardando sua aprovação</strong> — atalho direto para a fila
+      de revisão; vazio significa que está tudo em dia.</span></li>
+    <li><span class="b"></span><span><strong>Sinais &amp; Instagram</strong> — a conta conectada e o estado
+      “pronto para publicar”. Problemas de conexão aparecem aqui antes de virarem falha.</span></li>
+    <li><span class="b"></span><span><strong>Atalhos</strong> — nova pauta, gerar conteúdo, insights.</span></li>
+  </ul>
+</div>
+
+<div class="pb"></div>
+
+<!-- ══════════════════════════════ 2 · CONTEÚDO ══════════════════════════════ -->
+<div class="section">
+  <div class="area-head"><span class="area-num">2</span><h2>Conteúdo</h2></div>
+  <p style="margin-top:8px">A área onde o material nasce, com três sub-menus na ordem natural:
+    alimentar a fila (<strong>Pautas</strong>), avaliar sugestões do robô (<strong>Ideias</strong>)
+    e criar as peças (<strong>Gerar</strong>).</p>
+
+  <h3>Pautas <span class="menu-path">/pautas</span></h3>
+  <div class="shot h78"><div class="shot-bar"><span class="d d1"></span><span class="d d2"></span><span class="d d3"></span><span class="u">app › Conteúdo › Pautas</span></div>
+    <img src="assets/prints/pautas.png" alt="Tela Pautas"></div>
+  <p class="figcap"><strong>Figura 2.</strong> O backlog editorial da marca.</p>
+  <ul class="keys">
+    <li><span class="b"></span><span>Cada pauta é um tema que pode virar peça: título, objetivo,
+      categoria, <strong>formato desejado</strong> (post, carrossel ou story), prioridade e anexos.</span></li>
+    <li><span class="b"></span><span><strong>Status</strong>: Backlog → Na fila → Em produção → Concluída.
+      O robô consome pautas de Backlog/Na fila e as move sozinho ao gerar.</span></li>
+    <li><span class="b"></span><span>Pautas escritas por você <strong>sempre têm prioridade</strong> sobre
+      as inventadas pelo robô.</span></li>
+  </ul>
+</div>
+
+<div class="pb"></div>
+
+<div class="section">
+  <h3>Ideias <span class="menu-path">/ideas</span></h3>
+  <div class="shot h60"><div class="shot-bar"><span class="d d1"></span><span class="d d2"></span><span class="d d3"></span><span class="u">app › Conteúdo › Ideias</span></div>
+    <img src="assets/prints/ideas.png" alt="Tela Ideias"></div>
+  <p class="figcap"><strong>Figura 3.</strong> Sugestões do robô aguardando sua curadoria.</p>
+  <ul class="keys">
+    <li><span class="b"></span><span>Quando a fila de pautas esvazia (modo “Sugerir e esperar seu OK”),
+      o robô inventa temas a partir do perfil da marca e os deixa aqui.</span></li>
+    <li><span class="b"></span><span><strong>Promover</strong> transforma a ideia numa pauta normal do
+      backlog; descartar a remove. Nada é publicado sem passar por uma dessas decisões.</span></li>
+    <li><span class="b"></span><span>No modo <strong>Autônomo total</strong>, o robô pula esta etapa e cria
+      a pauta direto no backlog — a trilha fica na Auditoria.</span></li>
+  </ul>
+
+  <h3 style="margin-top:20px">Gerar <span class="menu-path">/create</span></h3>
+  <div class="shot h78"><div class="shot-bar"><span class="d d1"></span><span class="d d2"></span><span class="d d3"></span><span class="u">app › Conteúdo › Gerar</span></div>
+    <img src="assets/prints/create.png" alt="Tela Gerar conteúdo"></div>
+  <p class="figcap"><strong>Figura 4.</strong> O assistente de criação — a mesma fábrica de
+    6 agentes que o robô usa, guiada por você.</p>
+</div>
+
+<div class="pb"></div>
+
+<div class="section">
+  <p>O assistente percorre três momentos:</p>
+  <div class="step"><div class="step-num">1</div><div class="step-body">
+    <h3>Briefing</h3>
+    <p>Escolha a pauta (ou escreva um tema na hora) e o <strong>formato</strong> — post único,
+      carrossel ou story. Na seção <strong>Direção criativa</strong> você pode fixar: imagem de
+      referência, fundo desejado, CTA e subtítulo. O botão <strong>“usar identidade do
+      logo”</strong> estampa o logo da marca em todos os slides.</p></div></div>
+  <div class="step"><div class="step-num">2</div><div class="step-body">
+    <h3>Geração com progresso real</h3>
+    <p>Você acompanha cada agente ao vivo: estrategista → arquiteto de narrativa → redator →
+      compositor visual → gerador de imagem → validador de qualidade. Leva de 1 a 2 minutos —
+      e o progresso é real, não uma animação.</p></div></div>
+  <div class="step"><div class="step-num">3</div><div class="step-body">
+    <h3>Resultado</h3>
+    <p>A peça pronta com <strong>nota de qualidade (0–100)</strong>, legenda e hashtags. Daqui
+      você envia para aprovação — ou ajusta o briefing e gera de novo. Ao regenerar, a tela de
+      <strong>comparação</strong> (<span class="menu-path">/content/…</span>) mostra a versão
+      anterior lado a lado com a nova.</p></div></div>
+</div>
+
+<div class="pb"></div>
+
+<!-- ══════════════════════════════ 3 · REVISÃO & AGENDA ══════════════════════════════ -->
+<div class="section">
+  <div class="area-head"><span class="area-num">3</span><h2>Revisão &amp; Agenda</h2></div>
+  <p style="margin-top:8px">Onde você decide <strong>o que sai</strong> e <strong>quando sai</strong>.</p>
+
+  <h3>Aprovações <span class="menu-path">/approvals</span></h3>
+  <div class="shot h78"><div class="shot-bar"><span class="d d1"></span><span class="d d2"></span><span class="d d3"></span><span class="u">app › Revisão &amp; Agenda › Aprovações</span></div>
+    <img src="assets/prints/approvals.png" alt="Tela Aprovações"></div>
+  <p class="figcap"><strong>Figura 5.</strong> A fila de decisão — peças de menor nota primeiro.</p>
+  <ul class="keys">
+    <li><span class="b"></span><span>As peças de <strong>menor nota de qualidade aparecem
+      primeiro</strong>: você gasta atenção onde ela importa.</span></li>
+    <li><span class="b"></span><span>Para cada peça: <strong>aprovar e agendar</strong> na mesma tela
+      (seletor de data embutido) ou <strong>rejeitar</strong> com comentário.</span></li>
+    <li><span class="b"></span><span>Peças auto-aprovadas pelo robô (nota ≥ mínima) não passam por aqui —
+      ficam registradas na Auditoria.</span></li>
+  </ul>
+</div>
+
+<div class="pb"></div>
+
+<div class="section">
+  <h3>Calendário <span class="menu-path">/calendar</span></h3>
+  <div class="shot h78"><div class="shot-bar"><span class="d d1"></span><span class="d d2"></span><span class="d d3"></span><span class="u">app › Revisão &amp; Agenda › Calendário</span></div>
+    <img src="assets/prints/calendar.png" alt="Tela Calendário"></div>
+  <p class="figcap"><strong>Figura 6.</strong> A visão mensal da presença da marca.</p>
+  <ul class="keys">
+    <li><span class="b"></span><span>Tudo que está <strong>agendado</strong> e o que já foi
+      <strong>publicado</strong>, dia a dia.</span></li>
+    <li><span class="b"></span><span>Cada item mostra a peça, o horário e o estado — agendado,
+      publicado ou falhou.</span></li>
+  </ul>
+
+  <!-- ══════════ 4 · PUBLICAÇÃO ══════════ -->
+  <div class="area-head" style="margin-top:22px"><span class="area-num">4</span><h2>Publicação</h2>
+    <span class="menu-path">/publishing</span></div>
+  <div class="shot h60"><div class="shot-bar"><span class="d d1"></span><span class="d d2"></span><span class="d d3"></span><span class="u">app › Publicação</span></div>
+    <img src="assets/prints/publishing.png" alt="Tela Publicação"></div>
+  <p class="figcap"><strong>Figura 7.</strong> O raio-X dos envios ao Instagram — “Nenhuma falha”
+    é o estado ideal.</p>
+  <ul class="keys">
+    <li><span class="b"></span><span>Quando um envio <strong>falha</strong> (token expirado, limite da
+      Meta, mídia recusada), aparece aqui com o motivo real e a opção de <strong>reenviar</strong>.</span></li>
+    <li><span class="b"></span><span>A plataforma <strong>nunca finge que publicou</strong>: sem
+      confirmação do Instagram, a peça fica marcada como falha — aqui e no painel Início.</span></li>
+  </ul>
+</div>
+
+<div class="pb"></div>
+
+<!-- ══════════════════════════════ 5 · DESEMPENHO ══════════════════════════════ -->
+<div class="section">
+  <div class="area-head"><span class="area-num">5</span><h2>Desempenho</h2></div>
+  <p style="margin-top:8px">O circuito de aprendizado: o que funcionou realimenta as próximas gerações.</p>
+
+  <h3>Insights <span class="menu-path">/insights</span></h3>
+  <div class="shot h78"><div class="shot-bar"><span class="d d1"></span><span class="d d2"></span><span class="d d3"></span><span class="u">app › Desempenho › Insights</span></div>
+    <img src="assets/prints/insights.png" alt="Tela Insights"></div>
+  <p class="figcap"><strong>Figura 8.</strong> Os padrões aprendidos com as suas métricas.</p>
+  <ul class="keys">
+    <li><span class="b"></span><span>Melhor formato, melhor janela de horário, temas que engajam —
+      derivados das métricas coletadas automaticamente após cada publicação.</span></li>
+    <li><span class="b"></span><span>Não é só relatório: o resumo de aprendizado é
+      <strong>injetado no briefing</strong> de toda nova geração (sua ou do robô).</span></li>
+    <li><span class="b"></span><span>Com poucas publicações, a tela declara que ainda não há padrões
+      confiáveis — honestidade antes de estatística.</span></li>
+  </ul>
+</div>
+
+<div class="pb"></div>
+
+<div class="section">
+  <h3>Histórico <span class="menu-path">/history</span></h3>
+  <div class="shot h78"><div class="shot-bar"><span class="d d1"></span><span class="d d2"></span><span class="d d3"></span><span class="u">app › Desempenho › Histórico</span></div>
+    <img src="assets/prints/history.png" alt="Tela Histórico"></div>
+  <p class="figcap"><strong>Figura 9.</strong> A linha do tempo completa da produção.</p>
+  <ul class="keys">
+    <li><span class="b"></span><span>Tudo que foi <strong>publicado</strong> (com métricas) e tudo que
+      foi <strong>gerado</strong>, mesmo o que não saiu.</span></li>
+    <li><span class="b"></span><span>Útil para resgatar uma peça antiga ou auditar a produção de um
+      período.</span></li>
+  </ul>
+</div>
+
+<div class="pb"></div>
+
+<!-- ══════════════════════════════ 6 · MARCA & AJUSTES ══════════════════════════════ -->
+<div class="section">
+  <div class="area-head"><span class="area-num">6</span><h2>Marca &amp; Ajustes</h2></div>
+  <p style="margin-top:8px">Todas as configurações, agrupadas em quatro famílias:
+    <span class="fam">Marca</span> <span class="fam">IA</span> <span class="fam">Conexões</span>
+    <span class="fam">Conta</span>. O painel do robô (<em>Automação</em>) ganhou a seção 7.</p>
+
+  <h3>Marca <span class="menu-path">/brand</span> <span class="fam">Marca</span></h3>
+  <div class="shot h78"><div class="shot-bar"><span class="d d1"></span><span class="d d2"></span><span class="d d3"></span><span class="u">app › Marca &amp; Ajustes › Marca</span></div>
+    <img src="assets/prints/brand.png" alt="Tela Marca"></div>
+  <p class="figcap"><strong>Figura 10.</strong> O coração estratégico — tudo aqui alimenta os
+    agentes de IA.</p>
+  <ul class="keys">
+    <li><span class="b"></span><span><strong>Regras e estilo de conteúdo</strong> — tom de voz, o que
+      dizer e o que evitar.</span></li>
+    <li><span class="b"></span><span><strong>Visual</strong> — cores, letras e logo; é daqui que os
+      criativos herdam a identidade.</span></li>
+    <li><span class="b"></span><span><strong>Frases que combinam com você</strong> — exemplos reais de
+      copy que ensinam o redator.</span></li>
+    <li><span class="b"></span><span><strong>Referências e concorrentes</strong> — contexto competitivo
+      para o estrategista.</span></li>
+  </ul>
+</div>
+
+<div class="pb"></div>
+
+<div class="section">
+  <h3>Inteligência artificial <span class="menu-path">/settings/ai</span> <span class="fam">IA</span></h3>
+  <div class="shot h60"><div class="shot-bar"><span class="d d1"></span><span class="d d2"></span><span class="d d3"></span><span class="u">app › Marca &amp; Ajustes › IA</span></div>
+    <img src="assets/prints/ai.png" alt="Tela IA"></div>
+  <p class="figcap"><strong>Figura 11.</strong> Quem escreve e quem desenha: provedores e chaves
+    (guardadas cifradas).</p>
+
+  <h3 style="margin-top:16px">Instagram <span class="menu-path">/settings/instagram</span> <span class="fam">Conexões</span></h3>
+  <div class="shot h60"><div class="shot-bar"><span class="d d1"></span><span class="d d2"></span><span class="d d3"></span><span class="u">app › Marca &amp; Ajustes › Instagram</span></div>
+    <img src="assets/prints/instagram.png" alt="Tela Instagram"></div>
+  <p class="figcap"><strong>Figura 12.</strong> Conexão oficial com a Meta: conta do Instagram e
+    credenciais do App (cifradas). Sem conexão, a publicação roda em modo de simulação — honesto
+    e visível.</p>
+</div>
+
+<div class="pb"></div>
+
+<div class="section">
+  <h3>Uso e custo <span class="menu-path">/settings/usage</span> <span class="fam">Conta</span></h3>
+  <div class="shot h60"><div class="shot-bar"><span class="d d1"></span><span class="d d2"></span><span class="d d3"></span><span class="u">app › Marca &amp; Ajustes › Uso</span></div>
+    <img src="assets/prints/usage.png" alt="Tela Uso e custo"></div>
+  <p class="figcap"><strong>Figura 13.</strong> O gasto do mês contra o teto definido na Automação.</p>
+
+  <h3 style="margin-top:16px">As demais telas da área</h3>
+  <table class="sub-list">
+    <tr><th>Menu</th><th>Caminho</th><th>O que faz</th></tr>
+    <tr><td>Marcas</td><td><span class="menu-path">/settings/brands</span></td>
+      <td>Múltiplas marcas no mesmo espaço — cada uma com pautas, peças e agenda próprias.</td></tr>
+    <tr><td>Instruções da IA</td><td><span class="menu-path">/settings/prompts</span></td>
+      <td>Ajuste fino por agente: instruções suas somadas ao comportamento padrão, sem programar.</td></tr>
+    <tr><td>Aprovação</td><td><span class="menu-path">/settings/approval</span></td>
+      <td>Modo de aprovação padrão: sempre manual, ou automática sob nota mínima.</td></tr>
+    <tr><td>Membros</td><td><span class="menu-path">/settings/users</span></td>
+      <td>Convites e papéis (Administrador / Membro). Só administradores veem credenciais.</td></tr>
+    <tr><td>Fuso</td><td><span class="menu-path">/settings/workspace</span></td>
+      <td>Fuso horário e janela de publicação — todos os horários do robô usam este fuso.</td></tr>
+    <tr><td>Auditoria</td><td><span class="menu-path">/settings/audit</span></td>
+      <td>Trilha completa de ações, humanas e do robô — inclusive pausas por teto de gasto.</td></tr>
+  </table>
+</div>
+
+<div class="pb"></div>
+
+<!-- ══════════════════════════════ 7 · AUTOMAÇÃO ══════════════════════════════ -->
+<div class="section">
+  <div class="area-head"><span class="area-num">7</span><h2>Automação — o painel do robô</h2>
+    <span class="menu-path">/settings/automation</span></div>
+  <p style="margin-top:8px">A tela que transforma a plataforma de “assistente” em
+    <strong>operação autônoma</strong>. Cada controle é uma salvaguarda: o robô só faz o que
+    estes campos permitem.</p>
+
+  <div class="shot"><div class="shot-bar"><span class="d d1"></span><span class="d d2"></span><span class="d d3"></span><span class="u">app › Marca &amp; Ajustes › Automação</span></div>
+    <img src="assets/prints/automation.png" alt="Tela Automação"></div>
+  <p class="figcap"><strong>Figura 14.</strong> O painel do robô: freio-mestre no topo, depois a
+    agenda e as salvaguardas.</p>
+</div>
+
+<div class="pb"></div>
+
+<div class="section">
+  <h3>Cada controle, explicado</h3>
+  <table>
+    <tr><th style="width:32%">Controle</th><th>O que governa</th></tr>
+    <tr><td><strong>Freio-mestre do robô</strong></td>
+      <td>O interruptor soberano de toda a automação. Desligado, <strong>nenhum robô age</strong> —
+        nem inventa pauta, nem publica — independente do resto. Opt-in explícito.</td></tr>
+    <tr><td><strong>Postagem automática</strong></td>
+      <td>Liga o robô desta marca: gerar, aprovar (sob nota mínima) e agendar nos horários definidos.
+        Desligado = você segue no controle manual.</td></tr>
+    <tr><td><strong>Dias de publicação</strong></td>
+      <td>Os dias da semana em que o robô age. <strong>Dia desmarcado = robô parado naquele dia.</strong></td></tr>
+    <tr><td><strong>Horários</strong></td>
+      <td>Os horários-alvo, no seu fuso, separados por vírgula (ex.: <code>09:00, 18:30</code>).
+        Funcionam como <strong>“a partir de”</strong>: se a plataforma estiver hibernando no minuto
+        exato, o robô recupera o horário ainda no mesmo dia — nunca pula em silêncio.</td></tr>
+    <tr><td><strong>Estratégia de criativo</strong></td>
+      <td>A direção visual: Híbrido (a IA decide por slide — recomendado), sempre foto, ou sempre
+        composição gráfica.</td></tr>
+    <tr><td><strong>Nota mínima para auto-aprovar</strong></td>
+      <td>Peça com nota igual ou acima publica sem revisão humana; abaixo, entra em Aprovações.
+        É a sua régua de qualidade (0–100).</td></tr>
+    <tr><td><strong>Gerações por dia</strong></td>
+      <td>Teto de peças criadas por dia, independente de quantos horários existam. Fecha a porta a
+        surpresa de fatura.</td></tr>
+    <tr><td><strong>Teto de gasto mensal (USD)</strong></td>
+      <td>Estourou, o robô pausa — e registra na Auditoria. O gasto corrente aparece em Uso.</td></tr>
+    <tr><td><strong>Inventar pauta quando a fila esvaziar</strong></td>
+      <td>Com o backlog vazio, o robô cria a próxima pauta a partir do perfil da marca. Pautas
+        suas sempre vêm primeiro.</td></tr>
+  </table>
+
+  <div class="grid2" style="margin-top:12px">
+    <div class="callout" style="margin:0">
+      <strong>Quantas peças por dia?</strong> O robô cobre <em>um horário por geração</em>, até o
+      menor dos dois limites: nº de horários marcados <em>ou</em> “gerações por dia”.
+      2 horários + teto 5 → 2 peças; 3 horários + teto 2 → 2 peças.
+    </div>
+    <div class="callout warn" style="margin:0">
+      <strong>“Não gerou hoje?”</strong> Confira nesta ordem (é a ordem em que o robô decide):
+      dia marcado → horário atingido → teto de gerações → teto de gasto → há pauta na fila.
+    </div>
+  </div>
+</div>
+
+<div class="pb"></div>
+
+<!-- ══════════════════════════════ APÊNDICE ══════════════════════════════ -->
+<div class="section">
+  <div class="eyebrow">Apêndice</div>
+  <h2 style="margin-top:4px">Como o robô decide publicar</h2>
+  <p>O caminho completo de uma peça autônoma, com as telas deste guia no papel de cada etapa:</p>
+
+  <div class="step"><div class="step-num">1</div><div class="step-body">
+    <h3>É hora?</h3><p>Confere a agenda (<em>Automação</em>): dia marcado + horário atingido.
+    Horário perdido é recuperado no mesmo dia.</p></div></div>
+  <div class="step"><div class="step-num">2</div><div class="step-body">
+    <h3>Posso gastar?</h3><p>Teto de gerações do dia e teto de gasto do mês (<em>Automação</em> /
+    <em>Uso</em>). Limite estourado = não gera, com registro na <em>Auditoria</em>.</p></div></div>
+  <div class="step"><div class="step-num">3</div><div class="step-body">
+    <h3>Qual tema?</h3><p>A melhor pauta da fila (<em>Pautas</em>) — prioridade alta primeiro,
+    evitando repetir temas recentes. Fila vazia? Inventa uma pauta do perfil da marca
+    (<em>Marca</em>).</p></div></div>
+  <div class="step"><div class="step-num">4</div><div class="step-body">
+    <h3>Gera de verdade</h3><p>A mesma fábrica de 6 agentes do menu <em>Gerar</em>, com o resumo
+    de aprendizado (<em>Insights</em>) embutido no briefing.</p></div></div>
+  <div class="step"><div class="step-num">5</div><div class="step-body">
+    <h3>Nota decide</h3><p>Nota ≥ mínima (<em>Automação</em>): publica imediatamente. Abaixo:
+    entra em <em>Aprovações</em> e espera você.</p></div></div>
+  <div class="step"><div class="step-num">6</div><div class="step-body">
+    <h3>Publica e aprende</h3><p>O envio aparece no <em>Calendário</em> (e em <em>Publicação</em>,
+    se falhar). As métricas viram os padrões de <em>Insights</em> — que melhoram a próxima peça.
+    O ciclo fecha.</p></div></div>
+
+  <div class="callout ok" style="margin-top:18px">
+    <strong>Segurança em camadas.</strong> Freio-mestre desligado por padrão · agenda e teto
+    definidos por você · gasto limitado por mês · nota mínima de qualidade · trilha de auditoria
+    completa. O robô é autônomo <em>dentro</em> das suas regras — nunca fora delas.
+  </div>
+
+  <div class="page-foot" style="margin-top:26px">
+    Social AI Platform — Guia de Menus · v2.0 · Julho de 2026 · Telas capturadas do ambiente real
+  </div>
+</div>
+
+</body>
+</html>

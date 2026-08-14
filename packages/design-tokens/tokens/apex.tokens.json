@@ -1,0 +1,144 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "$description": "APEX — fonte da verdade dos design tokens (DTCG). Compilado por compile.mjs em tailwind.tokens.js + apex-vars.css. EDITE AQUI; nunca os arquivos gerados. PB-1/R1 do redesign SOTA-2026.",
+  "color": {
+    "$type": "color",
+    "surface": {
+      "canvas": { "$value": "#F5F1EE", "$description": "Fundo base creme." },
+      "canvas-2": { "$value": "#F0EBE6", "$description": "Fundo de campo/superfície aninhada." },
+      "canvas-3": { "$value": "#EBE6E0" },
+      "paper": { "$value": "#FAF7F2", "$description": "Cards e painéis." },
+      "paper-2": { "$value": "#FBFAF6" },
+      "white": { "$value": "#FFFFFF" }
+    },
+    "ink": {
+      "ink": { "$value": "#1B1F2E", "$description": "Texto primário." },
+      "ink-2": { "$value": "#2A3142" },
+      "ink-3": { "$value": "#4A5266" },
+      "slate": { "$value": "#7A8295" },
+      "slate-2": { "$value": "#A0A8B8" },
+      "slate-3": { "$value": "#C4CAD4" }
+    },
+    "pastel": {
+      "blue": { "$value": "#E6F2FF" },
+      "cyan": { "$value": "#C8E0FF" },
+      "mint": { "$value": "#B6F0FF" },
+      "lilac": { "$value": "#D7C6FF" },
+      "rose": { "$value": "#FFC6F0" },
+      "cream": { "$value": "#F3F0FF" }
+    },
+    "semantic": {
+      "$description": "Cores de estado APCA-validadas (schedio-apex contrast_check.py) em light E dark. R1/A4: cada par testado sobre a superfície real, não isolado (Albers).",
+      "danger": { "$value": "#9B1C2E", "$description": "Texto/borda de erro sobre canvas (light). APCA Lc 78.5." },
+      "danger-on-dark": { "$value": "#FFC4C0", "$description": "Texto de erro sobre ink (dark). APCA Lc 77.4." },
+      "danger-solid": { "$value": "#C42B3A", "$description": "Fundo de botão danger sólido; texto branco. APCA Lc 81.8." },
+      "success": { "$value": "#14613C", "$description": "Texto de sucesso sobre canvas (light). APCA Lc 77.7." },
+      "success-on-dark": { "$value": "#93E5B6", "$description": "Texto de sucesso sobre ink (dark). APCA Lc 78.4." },
+      "success-solid": { "$value": "#157A47", "$description": "Fundo de sucesso sólido; texto branco. APCA Lc 81.7." },
+      "warning": { "$value": "#7A5000", "$description": "Texto de aviso sobre canvas (light). APCA Lc 76.2." },
+      "warning-on-dark": { "$value": "#FAD06B", "$description": "Texto de aviso sobre ink (dark). APCA Lc 79.1." }
+    }
+  },
+  "typography": {
+    "family": {
+      "$type": "fontFamily",
+      "display": { "$value": "'Satoshi', 'Inter', system-ui, sans-serif" },
+      "body": { "$value": "'Satoshi', 'Inter', system-ui, sans-serif" },
+      "serif": { "$value": "'Instrument Serif', 'Times New Roman', serif" }
+    },
+    "scale": {
+      "$type": "dimension",
+      "$description": "Escala modular Bringhurst (Elements of Typographic Style) — razão 1.2 (minor third), base 16px. Hierarquia VISUAL = tamanho; separada da hierarquia SEMÂNTICA (peso/cor) por A4/PosterGen. Validada por schedio-apex type_scale.py.",
+      "xs": { "$value": "0.694rem", "$description": "11.1px — captions, eyebrows." },
+      "sm": { "$value": "0.833rem", "$description": "13.3px — texto secundário, labels." },
+      "base": { "$value": "1rem", "$description": "16px — corpo." },
+      "lg": { "$value": "1.2rem", "$description": "19.2px." },
+      "xl": { "$value": "1.44rem", "$description": "23px." },
+      "2xl": { "$value": "1.728rem", "$description": "27.6px — tier 2 (títulos de seção)." },
+      "3xl": { "$value": "2.074rem", "$description": "33.2px — tier 1 (título de página)." },
+      "4xl": { "$value": "2.488rem", "$description": "39.8px." },
+      "5xl": { "$value": "2.986rem", "$description": "47.8px — display." }
+    },
+    "leading": {
+      "$type": "number",
+      "tight": { "$value": "1.1", "$description": "Display." },
+      "snug": { "$value": "1.25", "$description": "Headings." },
+      "normal": { "$value": "1.5", "$description": "Corpo." },
+      "relaxed": { "$value": "1.625", "$description": "Texto longo." }
+    },
+    "measure": {
+      "$type": "dimension",
+      "$description": "Cap de medida (line-length) — Bringhurst recomenda 45–75 caracteres.",
+      "prose": { "$value": "65ch" }
+    }
+  },
+  "spacing": {
+    "$type": "dimension",
+    "$description": "Ritmo base 4px (alinhado ao Tailwind). Tschichold/Müller-Brockmann: espaço é ativo, não sobra.",
+    "0": { "$value": "0px" },
+    "1": { "$value": "4px" },
+    "2": { "$value": "8px" },
+    "3": { "$value": "12px" },
+    "4": { "$value": "16px" },
+    "5": { "$value": "20px" },
+    "6": { "$value": "24px" },
+    "8": { "$value": "32px" },
+    "10": { "$value": "40px" },
+    "12": { "$value": "48px" },
+    "16": { "$value": "64px" },
+    "20": { "$value": "80px" },
+    "24": { "$value": "96px" },
+    "32": { "$value": "128px" }
+  },
+  "radius": {
+    "$type": "dimension",
+    "$description": "Tiers coerentes (Vignelli: escala sistemática · Gestalt similaridade). REGRA: container sempre mais macio que seu conteúdo — input(sm) < card(lg). Corrige o bug R1 (inputs eram mais redondos que cards). 0 valores órfãos.",
+    "sm": { "$value": "8px", "$description": "Inputs, select, textarea — mais apertado que o container." },
+    "md": { "$value": "12px", "$description": "Toast, dropdown, badges-pílula, superfícies pequenas (mata o órfão 16px)." },
+    "lg": { "$value": "16px", "$description": "Cards, modais, empty-state — o container padrão (era 20px)." },
+    "xl": { "$value": "24px", "$description": "Painéis-herói grandes apenas." },
+    "pill": { "$value": "999px", "$description": "CTA herói e elementos ovais intencionais (botão, tabs, badge)." }
+  },
+  "shadow": {
+    "$type": "shadow",
+    "sm": { "$value": "0 4px 14px -4px rgba(27,31,46,0.10)" },
+    "md": { "$value": "0 8px 32px -16px rgba(27,31,46,0.14)" },
+    "lg": { "$value": "0 18px 50px -22px rgba(27,31,46,0.20)" },
+    "xl": { "$value": "0 40px 90px -30px rgba(27,31,46,0.25), 0 20px 50px -20px rgba(215,198,255,0.40)" },
+    "inset-highlight": { "$value": "inset 0 1px 0 rgba(255,255,255,0.9)" }
+  },
+  "motion": {
+    "$description": "Tokens de motion (T4) — entram no SISTEMA em R1, não como afterthought de R5. Material 3 + iOS (schedio-apex motion_curve.py). Disney-12/Val Head: easing tem propósito, não decora. Todo consumo respeita prefers-reduced-motion.",
+    "duration": {
+      "$type": "duration",
+      "instant": { "$value": "100ms", "$description": "Press/tap — feedback imediato." },
+      "fast": { "$value": "150ms", "$description": "Hover, toggles — Doherty <400ms." },
+      "base": { "$value": "200ms", "$description": "Transições de UI padrão." },
+      "slow": { "$value": "300ms", "$description": "Entradas/saídas de painel, modal." },
+      "slower": { "$value": "450ms", "$description": "Reveal coreografado (R5a)." }
+    },
+    "easing": {
+      "$type": "cubicBezier",
+      "standard": { "$value": [0.2, 0.0, 0.0, 1.0], "$description": "M3 standard — uso geral." },
+      "emphasized": { "$value": [0.2, 0.0, 0.0, 1.0], "$description": "M3 emphasized — entradas com presença." },
+      "decel": { "$value": [0.0, 0.0, 0.0, 1.0], "$description": "M3 decelerate — elemento entrando." },
+      "accel": { "$value": [0.3, 0.0, 1.0, 1.0], "$description": "M3 accelerate — elemento saindo." },
+      "spring": { "$value": [0.5, 1.25, 0.75, 1.25], "$description": "iOS spring — feedback físico (whileTap)." }
+    }
+  },
+  "gradient": {
+    "iris-grad": {
+      "$value": "linear-gradient(120deg, #C8E0FF 0%, #D7C6FF 30%, #FFC6F0 55%, #FFD7C6 75%, #B6F0FF 100%)",
+      "$css-name": "iris-grad",
+      "$description": "Gradiente iridescente — fallback de imagem (R0 refutou que gradiente está morto; MANTER)."
+    },
+    "iris-conic": {
+      "$value": "conic-gradient(from 200deg at 50% 50%, #C8E0FF, #D7C6FF, #FFC6F0, #FFD7C6, #B6F0FF, #C8E0FF)",
+      "$css-name": "iris-conic"
+    },
+    "iris-soft": {
+      "$value": "linear-gradient(120deg, rgba(200,224,255,0.4), rgba(215,198,255,0.4), rgba(255,198,240,0.3), rgba(182,240,255,0.4))",
+      "$css-name": "iris-soft"
+    }
+  }
+}

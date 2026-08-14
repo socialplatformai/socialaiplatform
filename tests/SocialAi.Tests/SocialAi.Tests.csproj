@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- S-30: rede de segurança mínima dos invariantes-joia (isolamento multi-tenant,
+       gate de aprovação, dedup de publish, fail-fast de segredo, sincronia de enums).
+       Não é uma pirâmide de testes — só as invariantes que, se regredirem em silêncio,
+       quebram exatamente o que a auditoria validou como state-of-the-art. -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <!-- SQLite in-memory: relacional (transações, índices únicos), sem precisar de Docker/Postgres.
+         O índice funcional lower(Email) é Postgres-only — esses casos ficam Postgres-gated. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.8" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../apps/api/Api.csproj" />
+    <!-- C3 (FASE 8): testa MetricsCollectorJob.ParseInsights (parser puro de /insights, internal
+         no Worker). InternalsVisibleTo("SocialAi.Tests") está no Worker (AssemblyInfo). -->
+    <ProjectReference Include="../../apps/worker/Worker.csproj" />
+  </ItemGroup>
+
+</Project>

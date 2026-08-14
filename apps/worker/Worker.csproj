@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>SocialAi.Worker</RootNamespace>
+    <UserSecretsId>social-ai-worker</UserSecretsId>
+    <!-- H4/S-23: o worker agora referencia SocialAi.Core (não a API/Web). O workaround
+         ErrorOnDuplicatePublishOutputFiles (appsettings duplicado) não é mais necessário. -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
+    <!-- H4/S-23: IHttpClientFactory vinha transitivo via Api (Web SDK). Com Core, é explícito. -->
+    <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.8" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.8" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.4" />
+    <PackageReference Include="Minio" Version="6.0.3" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
+  </ItemGroup>
+
+  <!-- Reusa Domain + Data + SecretProtector + ICurrentWorkspace via lib compartilhada (não-Web). -->
+  <ItemGroup>
+    <ProjectReference Include="../../libs/SocialAi.Core/SocialAi.Core.csproj" />
+  </ItemGroup>
+
+  <!-- C3 (FASE 8): expõe o parser puro internal (MetricsCollectorJob.ParseInsights) ao projeto de
+       teste, sem torná-lo público (não faz parte da superfície do worker). -->
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>SocialAi.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+</Project>

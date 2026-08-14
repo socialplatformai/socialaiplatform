@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Social AI Platform — Arquitetura de Autonomia Governável</title>
+  <link rel="stylesheet" href="assets/apex-pdf.css">
+  <style>
+    .lead { font-size: 12.5pt; color: var(--ink-2); line-height: 1.5; max-width: 92%; }
+    .kpi-row { display: flex; gap: 12px; margin: 16px 0; }
+    .kpi { flex: 1; background: var(--paper); border: 1px solid rgba(27,31,46,0.07); border-radius: 14px; padding: 14px 16px; }
+    .kpi .num { font-size: 22pt; font-weight: 600; letter-spacing: -0.02em; color: var(--ink); line-height: 1; }
+    .kpi .lbl { font-size: 8pt; text-transform: uppercase; letter-spacing: 0.12em; color: var(--slate); margin-top: 6px; }
+    .kpi .sub { font-size: 8.5pt; color: var(--ink-3); margin-top: 4px; }
+    .legend { display: flex; gap: 18px; flex-wrap: wrap; margin: 8px 0 14px; font-size: 9pt; color: var(--ink-3); }
+    .legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; }
+    .dot.ok { background: #3E8E5E; } .dot.part { background: var(--sev-alta); } .dot.no { background: var(--sev-critica); }
+    .st { font-weight: 600; font-size: 9pt; white-space: nowrap; }
+    .st.ok { color: #2E7A4E; } .st.part { color: var(--sev-alta); } .st.no { color: var(--sev-critica); }
+    .anchor { font-family: 'SF Mono','Consolas',monospace; font-size: 8pt; color: var(--ink-3); background: var(--canvas-3); padding: 1px 5px; border-radius: 4px; }
+    .num-badge { font-family: 'SF Mono','Consolas',monospace; font-size: 11pt; color: var(--slate); font-weight: 600; margin-right: 8px; }
+    .pillar { background: var(--paper); border: 1px solid rgba(27,31,46,0.08); border-radius: 16px; padding: 16px 18px; margin: 12px 0; page-break-inside: avoid; }
+    .pillar-head { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+    .pillar-ic { height: 38px; width: 38px; border-radius: 11px; background: var(--iris); flex: 0 0 38px; box-shadow: 0 4px 14px rgba(27,31,46,0.10); }
+    .pillar-ttl { font-size: 13pt; font-weight: 600; color: var(--ink); }
+    .pillar-sub { font-size: 8.5pt; color: var(--slate); text-transform: uppercase; letter-spacing: 0.1em; }
+    .phase-tag { font-family: 'SF Mono','Consolas',monospace; font-size: 9pt; font-weight: 600; color: var(--white); background: var(--ink); padding: 3px 10px; border-radius: 999px; }
+    .phase-tag.f1 { background: #3E6E8E; } .phase-tag.f2 { background: #6E5A9E; } .phase-tag.f3 { background: #8E5A6E; } .phase-tag.f4 { background: #4A5266; } .phase-tag.f0 { background: #2E7A4E; }
+    .effort-line { font-size: 8.5pt; color: var(--slate); margin-top: 2px; }
+    .phase-head { display: flex; align-items: baseline; gap: 12px; margin-top: 8px; }
+    .risk { border-left: 4px solid var(--sev-critica); background: #FBEEEE; border-radius: 10px; padding: 11px 15px; margin: 9px 0; }
+    .risk h4 { color: var(--sev-critica); margin-bottom: 3px; }
+    .flow { background: var(--canvas-2); border-radius: 12px; padding: 14px 16px; margin: 12px 0; font-size: 9.5pt; }
+    .flow-step { display: inline-flex; align-items: center; gap: 6px; }
+    .flow-node { background: var(--paper); border: 1px solid var(--slate-3); border-radius: 8px; padding: 4px 10px; font-weight: 500; color: var(--ink-2); font-size: 9pt; }
+    .flow-node.new { border: 1.5px solid var(--sev-alta); background: #FBF3EC; }
+    .flow-node.ok { border-color: #3E8E5E; background: #EAF6EF; }
+    .flow-arrow { color: var(--slate); margin: 0 4px; }
+    .mini { font-size: 8.5pt; color: var(--ink-3); }
+    h2 { page-break-after: avoid; }
+    .twocol { column-count: 2; column-gap: 22px; }
+    .tag-new { display:inline-block; font-size:7pt; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:var(--white); background:var(--sev-alta); padding:1px 7px; border-radius:999px; vertical-align:middle; margin-left:6px; }
+    .tag-reuse { display:inline-block; font-size:7pt; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:#2E7A4E; background:#EAF6EF; border:1px solid #9FD3B4; padding:0px 7px; border-radius:999px; vertical-align:middle; margin-left:6px; }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════ CAPA ══════════════════════════════ -->
+<div class="cover">
+  <div class="cover-top">
+    <div class="logo-mark"></div>
+    <div class="logo-word">Social AI Platform</div>
+  </div>
+  <div class="cover-deco"></div>
+  <div class="cover-center">
+    <div class="eyebrow">Auditoria de arquitetura & plano de desenvolvimento</div>
+    <h1>Arquitetura de<br>autonomia governável</h1>
+    <div class="cover-band"></div>
+    <p class="cover-sub">Do gerador semi-automático ao agente que decide, cria com qualidade real,
+      publica sozinho e aprende o padrão do cliente — com você no controle do quanto de autonomia ligar.</p>
+  </div>
+  <div class="cover-meta">
+    <div><div class="k">Documento</div><div class="v">Auditoria v2 + Plano de Dev</div></div>
+    <div><div class="k">Método</div><div class="v">Leitura do código (âncoras de linha)</div></div>
+    <div><div class="k">Data</div><div class="v">Junho de 2026</div></div>
+    <div><div class="k">Base</div><div class="v">commit 705594b</div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════ SUMÁRIO ══════════════════════════════ -->
+<div class="section">
+  <div class="eyebrow">Sumário</div>
+  <h2 style="margin-top:4px">O que você vai encontrar</h2>
+  <div style="margin-top:14px">
+    <div class="toc-item"><span>1 · Sumário executivo — a visão e o que ela exige</span><span class="n">03</span></div>
+    <div class="toc-item"><span>2 · O que da plataforma atual serve (e o que não)</span><span class="n">04</span></div>
+    <div class="toc-item"><span>3 · A cadeia autônoma — o elo que falta</span><span class="n">06</span></div>
+    <div class="toc-item"><span>4 · Pilar I — Criativo de qualidade real (híbrido)</span><span class="n">07</span></div>
+    <div class="toc-item"><span>5 · Pilar II — Autonomia governável (painel + robô)</span><span class="n">09</span></div>
+    <div class="toc-item"><span>6 · Pilar III — Aprendizado configurável do "bom post"</span><span class="n">11</span></div>
+    <div class="toc-item"><span>7 · Plano de desenvolvimento em fases</span><span class="n">13</span></div>
+    <div class="toc-item"><span>8 · Manutenção, escala, performance e disponibilidade</span><span class="n">15</span></div>
+    <div class="toc-item"><span>9 · Conclusão e recomendação de execução</span><span class="n">17</span></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════ 1. SUMÁRIO EXECUTIVO ══════════════════════════════ -->
+<div class="section pb">
+  <div class="eyebrow">Capítulo 1</div>
+  <h2><span class="num-badge">01</span>Sumário executivo — a visão e o que ela exige</h2>
+
+  <p class="lead">A meta não é "ligar a publicação automática". É transformar a plataforma num
+    <strong>sistema autônomo orientado por agente</strong>: um robô que, no horário configurado, decide
+    o que postar com base no que o cliente quer, gera um criativo de <strong>qualidade real</strong>
+    (não imagem genérica), publica sozinho quando autorizado, e <strong>aprende</strong> o que funciona
+    para aquele cliente — tudo sob um <strong>painel de governança</strong> onde você escolhe o grau de
+    autonomia. Esta auditoria mede o que da base atual serve para isso e desenha o caminho.</p>
+
+  <div class="kpi-row">
+    <div class="kpi"><div class="num">~60%</div><div class="lbl">da base de autonomia</div><div class="sub">já existe como serviços reutilizáveis</div></div>
+    <div class="kpi"><div class="num">3</div><div class="lbl">pilares a construir</div><div class="sub">criativo · autonomia · aprendizado</div></div>
+    <div class="kpi"><div class="num">4</div><div class="lbl">peças novas centrais</div><div class="sub">+ 1 painel, 2 entidades, 1 job</div></div>
+  </div>
+
+  <h3>A descoberta que muda o investimento</h3>
+  <p>A máquina de publicação já é autônoma por baixo — agendar, publicar real (Story/Feed/Carrossel),
+    coletar métricas, respeitar teto de gasto e kill-switch <strong>já funcionam</strong>. O que falta
+    não é construir o motor, é <strong>amarrar os elos numa cadeia</strong> e dar a você o
+    <strong>volante</strong>. Em concreto, três frentes:</p>
+
+  <div class="twocol">
+    <ul class="clean">
+      <li><strong>Criativo:</strong> um "diretor de arte" de IA que decide, por pauta, entre foto
+        generativa, banco de imagens ou composição gráfica — e providers de imagem reais plugados.</li>
+      <li><strong>Autonomia:</strong> um painel <em>Configurações › Automação</em> com feature-flags e
+        horários, e um <em>job de background</em> (o robô) que dispara a cadeia sozinho.</li>
+      <li><strong>Aprendizado:</strong> uma tela onde o operador escolhe o que é "bom post" (likes,
+        saves, alcance…), salvo no banco, alimentando o que a IA prioriza.</li>
+    </ul>
+  </div>
+
+  <div class="callout"><strong>Tese de uma linha:</strong> não se constrói um agente autônomo do zero
+    — <em>completa-se e governa-se</em> um que já tem o motor pronto. Isso muda custo, risco e prazo a
+    favor do projeto. O trabalho é arquitetural e cirúrgico, não um recomeço.</div>
+</div>
+
+<!-- ══════════════════════════════ 2. O QUE SERVE ══════════════════════════════ -->
+<div class="section pb">
+  <div class="eyebrow">Capítulo 2</div>
+  <h2><span class="num-badge">02</span>O que da plataforma atual serve (e o que não)</h2>
+
+  <p>Filtro honesto do código atual sob a lente da nova visão. Verde = aproveita como está; âmbar =
+    existe mas precisa estender; vermelho = falta construir.</p>
+
+  <div class="legend">
+    <span><span class="dot ok"></span> <strong>Aproveita</strong></span>
+    <span><span class="dot part"></span> <strong>Estende</strong></span>
+    <span><span class="dot no"></span> <strong>Constrói</strong></span>
+  </div>
+
+  <table>
+    <thead><tr><th>Capacidade sob a nova visão</th><th style="width:80px">Veredito</th><th>Evidência no código / o que muda</th></tr></thead>
+    <tbody>
+      <tr><td>Publicação real Story / Feed / Carrossel</td><td><span class="st ok">Aproveita</span></td><td><span class="anchor">worker/Publishing/Publishers.cs</span> — os 3 formatos publicam de verdade.</td></tr>
+      <tr><td>Agendar → publicar → coletar métricas (jobs 24/7)</td><td><span class="st ok">Aproveita</span></td><td>6 jobs no worker; <code>PublishSchedulerJob</code> (60s) + <code>PublishJob</code> (30s) já automáticos.</td></tr>
+      <tr><td>Teto de gasto + kill-switch + auditoria</td><td><span class="st ok">Aproveita</span></td><td><span class="anchor">Budget.MonthlyCapUsd</span>, <code>Loop:Enabled</code>, <span class="anchor">AuditService.LogAsync</span>.</td></tr>
+      <tr><td>Geração assíncrona (6 agentes) reutilizável por API</td><td><span class="st ok">Aproveita</span></td><td><span class="anchor">ContentController.GenerateAsyncStart:88</span> — chamável por um orquestrador.</td></tr>
+      <tr><td>Coleta de métricas reais do Instagram</td><td><span class="st ok">Aproveita</span></td><td><span class="anchor">MetricsCollectorJob.cs:35-122</span> — reach, likes, saves reais.</td></tr>
+      <tr><td>Config por workspace (fuso, janela, aprovação)</td><td><span class="st part">Estende</span></td><td><span class="anchor">Workspace.PublishWindowStart/End</span> existe, mas é aviso suave; falta virar regra.</td></tr>
+      <tr><td>Loop autônomo</td><td><span class="st part">Estende</span></td><td><span class="anchor">AutonomousLoopJob.cs</span> — gera <em>ideia</em> e <strong>para</strong>; não leva até publicar.</td></tr>
+      <tr><td>Aprovação automática (modo já existe)</td><td><span class="st part">Estende</span></td><td><span class="anchor">ApprovalMode (Enums.cs:7)</span> existe; falta o gatilho que auto-aprova.</td></tr>
+      <tr><td>Geração de imagem de <strong>qualidade real</strong></td><td><span class="st no">Constrói</span></td><td>Caminho padrão é determinístico/gradiente; providers reais existem mas não no fluxo padrão.</td></tr>
+      <tr><td>Decisão de estratégia de criativo (foto/banco/gráfico)</td><td><span class="st no">Constrói</span></td><td>Pipeline é caminho único; não há "diretor de arte" que escolha.</td></tr>
+      <tr><td>Orquestrador autônomo (o "robô" por horário)</td><td><span class="st no">Constrói</span></td><td>Não existe job que dispare a cadeia completa por agendamento.</td></tr>
+      <tr><td>Painel de governança (flags + horários + estratégia)</td><td><span class="st no">Constrói</span></td><td>Não existe a tela <em>Configurações › Automação</em>.</td></tr>
+      <tr><td>"Bom post" configurável (pesos de métrica)</td><td><span class="st no">Constrói</span></td><td><span class="anchor">PerformanceAnalyzer.cs:167</span> — hoje <code>Likes+Saves</code> hardcoded.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout ok"><strong>Leitura:</strong> seis capacidades verdes sustentam o projeto; as
+    vermelhas são pontos de extensão limpos sobre código bem fatorado (feature-folders, providers
+    abstratos, jobs isolados). Nada exige reescrever o núcleo.</div>
+
+  <div class="callout warn"><strong>Os 8 pontos da lista inicial</strong> (logo, referências, fundo,
+    CTA/subtítulo, editar/lote/anti-colisão de agenda, dedup, lookahead) continuam válidos e estão
+    absorvidos no plano — o logo já está pronto; os demais entram nas Fases 1–2 como base do criativo e
+    da esteira de agendamento.</div>
+</div>
+
+<!-- ══════════════════════════════ 3. A CADEIA AUTÔNOMA ══════════════════════════════ -->
+<div class="section pb">
+  <div class="eyebrow">Capítulo 3</div>
+  <h2><span class="num-badge">03</span>A cadeia autônoma — o elo que falta</h2>
+
+  <p>Hoje a cadeia tem as duas pontas automáticas (gerar e publicar) mas <strong>quebra no meio</strong>:
+    o loop cria uma ideia e para, esperando um humano promover, gerar, aprovar e agendar. O trabalho é
+    fechar o circuito com um orquestrador e salvaguardas.</p>
+
+  <h3>Como é hoje</h3>
+  <div class="flow">
+    <span class="flow-node new">trigger?</span><span class="flow-arrow">→</span>
+    <span class="flow-node ok">cria ideia</span><span class="flow-arrow">→</span>
+    <span class="flow-node" style="border-style:dashed;color:var(--slate)">⨯ humano promove</span><span class="flow-arrow">→</span>
+    <span class="flow-node ok">gera</span><span class="flow-arrow">→</span>
+    <span class="flow-node" style="border-style:dashed;color:var(--slate)">⨯ humano aprova</span><span class="flow-arrow">→</span>
+    <span class="flow-node ok">agenda</span><span class="flow-arrow">→</span>
+    <span class="flow-node ok">publica</span>
+    <div class="mini" style="margin-top:8px">O loop autônomo (<span class="anchor">AutonomousLoopJob.cs:100-109</span>) chega ao "cria ideia" e para. Tudo após depende de cliques humanos.</div>
+  </div>
+
+  <h3>Como precisa ser (autonomia governável)</h3>
+  <div class="flow">
+    <span class="flow-node new">job por horário</span><span class="flow-arrow">→</span>
+    <span class="flow-node new">escolhe tema</span><span class="flow-arrow">→</span>
+    <span class="flow-node ok">gera</span><span class="flow-arrow">→</span>
+    <span class="flow-node new">auto-aprova<br><span class="mini">se flag + score≥limiar</span></span><span class="flow-arrow">→</span>
+    <span class="flow-node new">auto-agenda<br><span class="mini">no slot livre</span></span><span class="flow-arrow">→</span>
+    <span class="flow-node ok">publica</span>
+    <div class="mini" style="margin-top:8px">Verde = serviço já existe e é reutilizável. Âmbar = peça nova. As novas são poucas e bem delimitadas.</div>
+  </div>
+
+  <table>
+    <thead><tr><th>Passo da cadeia</th><th style="width:90px">Estado</th><th>Serviço reutilizável / o que falta</th></tr></thead>
+    <tbody>
+      <tr><td>Trigger por horário configurado</td><td><span class="st no">Construir</span></td><td>Novo <code>PostingScheduleJob</code> (lê flags + horários do workspace).</td></tr>
+      <tr><td>Escolher tema/pauta autônomo</td><td><span class="st no">Construir</span></td><td>Lógica de seleção (histórico, objetivos, anti-repetição) — hoje a ideia é genérica.</td></tr>
+      <tr><td>Gerar conteúdo</td><td><span class="st ok">Existe</span></td><td><span class="anchor">ContentController.GenerateAsyncStart:88</span> + <code>AgentsClient</code>.</td></tr>
+      <tr><td>Auto-aprovar (com gate de qualidade)</td><td><span class="st part">Estender</span></td><td><span class="anchor">ApprovalController.Decide:64</span> existe; falta o gatilho automático sob flag.</td></tr>
+      <tr><td>Auto-agendar no slot livre</td><td><span class="st part">Estender</span></td><td><span class="anchor">ScheduleController.Schedule:38</span> existe; falta escolher a hora pela janela.</td></tr>
+      <tr><td>Publicar</td><td><span class="st ok">Existe</span></td><td><code>PublishSchedulerJob</code> + <code>PublishJob</code> — automáticos.</td></tr>
+      <tr><td>Auditar cada passo</td><td><span class="st ok">Existe</span></td><td><span class="anchor">AuditService.LogAsync:27</span> — registrar o que o robô fez.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══════════════════════════════ 4. PILAR I — CRIATIVO ══════════════════════════════ -->
+<div class="section pb">
+  <div class="eyebrow">Pilar I</div>
+  <h2><span class="num-badge">04</span>Criativo de qualidade real (estratégia híbrida)</h2>
+
+  <p class="lead">O ponto que você mais enfatizou: <strong>nada de imagem genérica</strong>. Um agente
+    deve decidir, por pauta, a melhor estratégia de criativo e produzir algo que reflita o contexto
+    real do cliente.</p>
+
+  <div class="pillar">
+    <div class="pillar-head"><div class="pillar-ic"></div><div><div class="pillar-ttl">Diretor de Arte de IA</div><div class="pillar-sub">novo agente · decide a estratégia</div></div></div>
+    <p>Um <strong>Creative Director Agent</strong> entra entre o arquiteto de história e o compositor
+      visual <span class="tag-new">novo</span>. Recebe a pauta (tema, tipo de slide, emoção-alvo) e o
+      contexto da marca (paleta, tom, referências) e decide:</p>
+    <div class="flow" style="background:var(--canvas-3)">
+      <span class="flow-node">tema "lançamento" + destaque → <strong>foto generativa</strong></span><br style="line-height:2.2">
+      <span class="flow-node">tema "depoimento" + confiança → <strong>banco de imagens</strong></span><br style="line-height:2.2">
+      <span class="flow-node">tema "comparativo" + dados → <strong>composição gráfica</strong></span>
+    </div>
+    <p class="mini">Ponto de inserção: <span class="anchor">agents/src/agents/pipeline-v2.ts:37-44</span>. O design-spec já entrega paleta + mood — o agente só precisa consumir e rotear.</p>
+  </div>
+
+  <div class="pillar">
+    <div class="pillar-head"><div class="pillar-ic"></div><div><div class="pillar-ttl">Providers de imagem reais</div><div class="pillar-sub">estender · qualidade de foto</div></div></div>
+    <p>A abstração <code>IImageProvider</code> já existe e já tem Gemini e OpenAI <code>gpt-image</code>
+      implementados de verdade <span class="tag-reuse">reusa</span>. Plugar novos é uma classe + um caso
+      no seletor:</p>
+    <ul class="clean">
+      <li><strong>Flux / Replicate</strong> para foto generativa de alto padrão, com a paleta da marca
+        injetada no prompt (brand-locking de cor) <span class="tag-new">novo</span>.</li>
+      <li><strong>Banco de imagens</strong> (ex.: Unsplash/Pexels) como provider de "stock" curado por
+        query temática <span class="tag-new">novo</span>.</li>
+      <li>Cada provider falha de forma <em>diagnosticável</em> — sem cair em imagem genérica silenciosa.</li>
+    </ul>
+    <p class="mini">Âncora: <span class="anchor">agents/src/.../imageProvider.ts:18-155</span> · <span class="anchor">config.ts:125-155</span>.</p>
+  </div>
+
+  <div class="pillar">
+    <div class="pillar-head"><div class="pillar-ic"></div><div><div class="pillar-ttl">Contexto → prompt + nota de qualidade visual</div><div class="pillar-sub">estender · fecha o loop</div></div></div>
+    <p>Hoje o prompt de imagem é genérico (estilo + cor). A melhoria liga o <strong>contexto real da
+      pauta</strong> ao prompt (tema, produto, mensagem) e estende o <strong>validador de qualidade</strong>
+      (6º agente) para dar uma <em>nota visual</em> — coerência com a paleta/mood, detecção de
+      resultado pobre — que reprova e tenta outra estratégia automaticamente.</p>
+    <p class="mini">Âncoras: <span class="anchor">design-spec.ts:206-212</span> (estética) · <span class="anchor">quality-validator.ts:448-461</span> (score). O validador hoje pesa 40% técnico + 60% voz; ganha um eixo visual.</p>
+  </div>
+
+  <div class="callout"><strong>Resultado:</strong> cada post passa a ter a estratégia visual certa para
+    o seu tema, com a cara da marca travada (cor, logo, fonte) e uma nota de qualidade que impede peça
+    fraca de ir ao ar. Tudo por extensão dos agentes — sem tocar no render core.</div>
+</div>
+
+<!-- ══════════════════════════════ 5. PILAR II — AUTONOMIA ══════════════════════════════ -->
+<div class="section pb">
+  <div class="eyebrow">Pilar II</div>
+  <h2><span class="num-badge">05</span>Autonomia governável (o painel + o robô)</h2>
+
+  <p class="lead">Você no volante: uma tela onde se liga/desliga a autonomia, define horários e regras,
+    e um job de background que executa sozinho conforme essa configuração.</p>
+
+  <div class="pillar">
+    <div class="pillar-head"><div class="pillar-ic"></div><div><div class="pillar-ttl">Tela "Configurações › Automação"</div><div class="pillar-sub">novo · o volante</div></div></div>
+    <div class="mock">
+      <div class="mock-bar"><span class="mock-dot"></span><span class="mock-dot"></span><span class="mock-dot"></span><span class="mock-url">/settings/automation</span></div>
+      <div class="mock-body">
+        <div class="mock-h" style="margin-bottom:10px">Automação da publicação</div>
+        <div class="mock-card"><div class="mock-label">Modo de operação</div>
+          <span class="mock-pill" style="background:#EAF6EF">● Manual (aprovo tudo)</span>
+          <span class="mock-pill">Assistido</span>
+          <span class="mock-pill">Automático (robô posta sozinho)</span></div>
+        <div class="mock-card"><div class="mock-label">Horários de postagem</div>
+          <span class="mock-pill">Seg, Qua, Sex</span> <span class="mock-pill">09:00</span> <span class="mock-pill">18:00</span>
+          <span class="mock-pill" style="border:1px dashed var(--slate-3);background:transparent">+ adicionar</span></div>
+        <div class="mock-card"><div class="mock-label">Estratégia de criativo</div>
+          <span class="mock-pill">Híbrido (IA decide)</span></div>
+        <div class="mock-card"><div class="mock-label">Aprovar automático se a nota for ≥</div>
+          <span class="mock-pill">85 / 100</span></div>
+        <div class="mock-card"><div class="mock-label">Teto de gasto mensal</div>
+          <span class="mock-pill">US$ 30,00</span> &nbsp; <span class="mini">kill-switch global sempre ativo</span></div>
+      </div>
+    </div>
+    <p class="mini">Reaproveita o framework de <span class="anchor">BudgetController</span> e
+      <span class="anchor">WorkspaceSettingsController</span> (já têm GET/PUT). É um painel novo sobre
+      controllers existentes + alguns campos novos.</p>
+  </div>
+
+  <div class="pillar">
+    <div class="pillar-head"><div class="pillar-ic"></div><div><div class="pillar-ttl">Onde a configuração mora</div><div class="pillar-sub">estender · entidades</div></div></div>
+    <p>A config por workspace já vive em <code>Budget</code> e <code>Workspace</code>. Adicionar as
+      novas flags é uma <strong>migration simples</strong> + 5 linhas no controller:</p>
+    <table>
+      <thead><tr><th>Nova flag</th><th>Tipo</th><th>Para quê</th></tr></thead>
+      <tbody>
+        <tr><td><code>AutoPostEnabled</code></td><td>bool</td><td>Liga/desliga o robô para o workspace.</td></tr>
+        <tr><td><code>PostingScheduleDays/Times</code></td><td>JSON</td><td>"Seg/Qua/Sex às 09:00 e 18:00".</td></tr>
+        <tr><td><code>CreativeStrategy</code></td><td>texto</td><td>Híbrido / sempre-foto / sempre-gráfico.</td></tr>
+        <tr><td><code>AutoApprovalThreshold</code></td><td>int</td><td>Nota mínima para auto-aprovar.</td></tr>
+      </tbody>
+    </table>
+    <p class="mini">Âncora: <span class="anchor">Entities.cs (Budget :343, Workspace :22)</span> · <span class="anchor">WorkspaceSettingsController.cs:24</span>.</p>
+  </div>
+
+  <div class="pillar">
+    <div class="pillar-head"><div class="pillar-ic"></div><div><div class="pillar-ttl">O robô — <code>PostingScheduleJob</code></div><div class="pillar-sub">novo · o motor da autonomia</div></div></div>
+    <p>Um novo job de background (tick a cada hora) que, para cada workspace com
+      <code>AutoPostEnabled</code>: confere se chegou um horário configurado → escolhe o tema → chama a
+      geração → aplica o gate de qualidade → auto-aprova se passar → agenda no próximo slot livre →
+      deixa o <code>PublishJob</code> publicar. <strong>Cada passo é auditado</strong>; o teto de gasto
+      e o kill-switch global continuam soberanos.</p>
+    <p class="mini">Modela-se sobre os jobs existentes (<span class="anchor">apps/worker/Jobs/</span>) — mesma forma, mesmo acesso a banco; nada de infraestrutura nova.</p>
+  </div>
+
+  <div class="callout warn"><strong>Salvaguarda de marca.</strong> O modo "Automático" é opt-in por
+    workspace com uma <strong>rampa de confiança</strong> recomendada: nas primeiras N publicações o
+    sistema ainda pede um olhar humano; depois de um histórico bom, libera o 100% sozinho. Você pode
+    pular a rampa se quiser controle total no dia 1 — é uma opção do painel, não uma trava no código.</div>
+</div>
+
+<!-- ══════════════════════════════ 6. PILAR III — APRENDIZADO ══════════════════════════════ -->
+<div class="section pb">
+  <div class="eyebrow">Pilar III</div>
+  <h2><span class="num-badge">06</span>Aprendizado configurável do "bom post"</h2>
+
+  <p class="lead">A IA deve aprender o padrão de <em>cada</em> cliente — e o que conta como sucesso deve
+    ser <strong>escolhido por você no painel</strong>, não fixado no código.</p>
+
+  <div class="pillar">
+    <div class="pillar-head"><div class="pillar-ic"></div><div><div class="pillar-ttl">O que já existe</div><div class="pillar-sub">reusa · a base do loop</div></div></div>
+    <ul class="clean">
+      <li>Coleta real de <strong>alcance, likes e saves</strong> do Instagram, por post <span class="tag-reuse">reusa</span> — <span class="anchor">MetricsCollectorJob.cs:35-122</span>.</li>
+      <li>Um analisador que agrega por <strong>formato e horário</strong> e injeta um resumo na próxima
+        geração <span class="tag-reuse">reusa</span> — <span class="anchor">PerformanceAnalyzer.cs:14-79</span>.</li>
+      <li>Histórico com as dimensões certas (formato, horário, métricas) já gravado nos dados.</li>
+    </ul>
+  </div>
+
+  <div class="pillar">
+    <div class="pillar-head"><div class="pillar-ic"></div><div><div class="pillar-ttl">O que falta — e o que você pediu</div><div class="pillar-sub">novo · "bom post" configurável</div></div></div>
+    <p>Hoje "bom post" é <code>Likes + Saves</code> em peso igual, fixo no código
+      (<span class="anchor">PerformanceAnalyzer.cs:167</span>). A evolução:</p>
+    <div class="mock">
+      <div class="mock-bar"><span class="mock-dot"></span><span class="mock-dot"></span><span class="mock-dot"></span><span class="mock-url">/settings/automation › o que é um bom post</span></div>
+      <div class="mock-body">
+        <div class="mock-label">Selecione os sinais que mais importam para esta marca</div>
+        <div class="mock-card">☑ Salvamentos &nbsp; <span class="mock-pill">peso 40%</span></div>
+        <div class="mock-card">☑ Alcance &nbsp; <span class="mock-pill">peso 30%</span></div>
+        <div class="mock-card">☑ Curtidas &nbsp; <span class="mock-pill">peso 20%</span></div>
+        <div class="mock-card">☑ Comentários &nbsp; <span class="mock-pill">peso 10%</span></div>
+      </div>
+    </div>
+    <p>A seleção é salva numa nova entidade <code>MetricWeightConfig</code> (1 por workspace)
+      <span class="tag-new">novo</span>; o analisador passa a calcular o sucesso com <em>esses</em>
+      pesos, e o robô prioriza temas/formatos/horários que pontuam alto sob a régua do cliente.</p>
+    <p class="mini">Ponto de conexão: <code>Workspace</code> (que já agrupa <code>Budget</code> e templates). O cálculo hardcoded em <span class="anchor">PerformanceAnalyzer.cs:167</span> passa a ler os pesos.</p>
+  </div>
+
+  <div class="callout ok"><strong>Efeito composto:</strong> com criativo de qualidade (Pilar I), robô
+    autônomo (Pilar II) e régua de sucesso por cliente (Pilar III), o sistema vira um ciclo que melhora
+    sozinho: <em>gera melhor → mede pelo que importa → aprende → escolhe melhor o próximo</em>.</div>
+</div>
+
+<!-- ══════════════════════════════ 7. PLANO DE DEV ══════════════════════════════ -->
+<div class="section pb">
+  <div class="eyebrow">Capítulo 7</div>
+  <h2><span class="num-badge">07</span>Plano de desenvolvimento em fases</h2>
+
+  <p>Ordenado por dependência e por valor entregue. Cada fase deixa o sistema utilizável ao final.</p>
+
+  <div class="card">
+    <div class="phase-head"><span class="phase-tag f0">FASE 0</span><span class="finding-title">Fundação de input criativo</span></div>
+    <div class="effort-line">~1 semana · base para tudo · resolve os pendentes da lista inicial</div>
+    <p style="margin-top:8px">Liga referências ao pipeline, adiciona fundo custom e subtítulo/CTA como
+      entrada. É a matéria-prima que o diretor de arte e o robô vão usar. (Logo já está pronto.)</p>
+  </div>
+
+  <div class="card">
+    <div class="phase-head"><span class="phase-tag f1">FASE 1</span><span class="finding-title">Pilar I — Criativo de qualidade real</span></div>
+    <div class="effort-line">~2–3 semanas · o maior salto de valor percebido</div>
+    <ul class="clean">
+      <li>Creative Director Agent (decide foto / banco / composição).</li>
+      <li>Providers reais: Flux/Replicate + banco de imagens, com brand-locking de cor e logo.</li>
+      <li>Nota de qualidade visual no validador, com nova tentativa automática se reprovar.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="phase-head"><span class="phase-tag f2">FASE 2</span><span class="finding-title">Pilar II — Autonomia governável</span></div>
+    <div class="effort-line">~2–3 semanas · depende da Fase 0/1 para gerar bem o que vai postar sozinho</div>
+    <ul class="clean">
+      <li>Entidades + migration das flags; painel <em>Configurações › Automação</em>.</li>
+      <li><code>PostingScheduleJob</code>: o robô que dispara a cadeia por horário.</li>
+      <li>Auto-aprovação sob gate de qualidade + auto-agendamento no slot livre (anti-colisão no servidor).</li>
+      <li>Esteira de agendamento robusta: editar, lote, "quantos à frente".</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="phase-head"><span class="phase-tag f3">FASE 3</span><span class="finding-title">Pilar III — Aprendizado configurável + dedup</span></div>
+    <div class="effort-line">~2 semanas · fecha o ciclo de melhoria contínua</div>
+    <ul class="clean">
+      <li><code>MetricWeightConfig</code> + painel de "o que é um bom post" (listbox + pesos).</li>
+      <li>Analisador passa a usar os pesos; seleção de tema do robô prioriza o que pontua alto.</li>
+      <li>Dedup editorial: não repetir tema recente; coletar também comentários.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="phase-head"><span class="phase-tag f4">FASE 4</span><span class="finding-title">Endurecimento — manutenção, escala, performance</span></div>
+    <div class="effort-line">~2 semanas · pode correr em paralelo conforme a tração</div>
+    <ul class="clean">
+      <li>Throttle de concorrência no gerador de imagem; resiliência da fila a reinício.</li>
+      <li>Limite de taxa de geração por workspace; observabilidade do robô (painel do que ele fez).</li>
+      <li>Preparar o ciclo de vida do runtime (.NET 8 → LTS antes do fim de suporte).</li>
+    </ul>
+  </div>
+
+  <h3>Visão consolidada</h3>
+  <table>
+    <thead><tr><th>Fase</th><th>Pilar / foco</th><th>Peças novas centrais</th><th>Esforço</th></tr></thead>
+    <tbody>
+      <tr><td><strong>0</strong></td><td>Input criativo</td><td>costura de referências, fundo, subtítulo</td><td>~1 sem</td></tr>
+      <tr><td><strong>1</strong></td><td>Criativo de qualidade</td><td>Creative Director + providers reais + visual score</td><td>2–3 sem</td></tr>
+      <tr><td><strong>2</strong></td><td>Autonomia governável</td><td>painel + flags + <code>PostingScheduleJob</code></td><td>2–3 sem</td></tr>
+      <tr><td><strong>3</strong></td><td>Aprendizado configurável</td><td><code>MetricWeightConfig</code> + dedup</td><td>~2 sem</td></tr>
+      <tr><td><strong>4</strong></td><td>Escala & manutenção</td><td>throttle, resiliência, .NET LTS</td><td>~2 sem</td></tr>
+    </tbody>
+  </table>
+  <p class="small muted">Estimativas relativas, um desenvolvedor familiarizado com a base, reaproveitando
+    a estrutura existente. Não incluem o App Review da Meta (trâmite externo da publicação real).</p>
+</div>
+
+<!-- ══════════════════════════════ 8. NFRs ══════════════════════════════ -->
+<div class="section pb">
+  <div class="eyebrow">Capítulo 8</div>
+  <h2><span class="num-badge">08</span>Manutenção, escala, performance e disponibilidade</h2>
+
+  <p>Os requisitos que você pediu — fácil manutenção, alta escala, performance e disponibilidade para
+    atualizações futuras — confrontados com o estado real.</p>
+
+  <h3>O que já protege esses atributos</h3>
+  <ul class="clean">
+    <li><strong>Manutenção:</strong> domínio numa lib compartilhada; código por feature-folder;
+      providers abstratos; contratos de enum verificados entre .NET e TypeScript. Adicionar um provider
+      ou uma flag é local e previsível.</li>
+    <li><strong>Disponibilidade:</strong> healthchecks, reaper de geração órfã, idempotência de
+      publicação, retry com backoff, segredos cifrados, modo degradado de primeira classe.</li>
+    <li><strong>Escala (no porte atual):</strong> API sem estado; um deploy por cliente isola a carga;
+      fila no Postgres sem broker a operar.</li>
+  </ul>
+
+  <h3>Os três tetos a tratar antes de crescer (Fase 4)</h3>
+  <div class="risk"><h4>R1 · Registro de jobs em memória + fila por polling</h4>
+    <p style="margin:0">O registro de trabalhos dos agentes se perde em reinício
+      (<span class="anchor">agents/src/jobs.ts</span>); a varredura de agendamento a cada 60s vira
+      gargalo com dezenas de milhares de posts. Aceitável hoje; tratar para multi-tenant de alto volume.</p></div>
+  <div class="risk"><h4>R2 · Gerador de imagem sem limite de concorrência</h4>
+    <p style="margin:0">Slides rasterizam em paralelo sem teto — com o robô gerando sozinho em escala,
+      vira risco de memória. Um limitador de concorrência resolve, barato e localizado.</p></div>
+  <div class="risk"><h4>R3 · Modelo de dados acoplado ao Instagram</h4>
+    <p style="margin:0">Fila, agenda e rate-limit assumem Instagram. Correto hoje; ao abrir para outras
+      redes (evolução futura), abstrair um "adaptador de rede" antes evita reescritas.</p></div>
+
+  <div class="callout"><strong>Custo do robô.</strong> Autonomia significa o sistema gastando IA
+    sozinho. O teto mensal por workspace já existe e o protege; a Fase 4 adiciona um limite de taxa de
+    geração por workspace para o caso de uso intenso, fechando a porta a surpresas de fatura.</div>
+</div>
+
+<!-- ══════════════════════════════ 9. CONCLUSÃO ══════════════════════════════ -->
+<div class="section pb">
+  <div class="eyebrow">Capítulo 9</div>
+  <h2><span class="num-badge">09</span>Conclusão e recomendação de execução</h2>
+
+  <p class="lead">A Social AI Platform tem o <strong>motor de autonomia pronto</strong> e bem
+    arquitetado. O que falta é dar a ele <strong>qualidade de criativo</strong>, um <strong>volante de
+    governança</strong> e uma <strong>régua de aprendizado por cliente</strong> — três pilares
+    construídos por extensão, não por reescrita.</p>
+
+  <h3>A sequência recomendada</h3>
+  <div class="step">
+    <div class="step-num">0</div>
+    <div class="step-body"><h3>Fundação criativa</h3><p>Liga referências, fundo e subtítulo — a matéria-prima dos pilares.</p></div>
+  </div>
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body"><h3>Pilar I — Criativo de qualidade</h3><p>Resolve a dor central ("nada de imagem genérica") e dá valor visível antes de automatizar.</p></div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body"><h3>Pilar II — Autonomia governável</h3><p>O painel e o robô. Vem depois do criativo: o que se posta sozinho precisa já ser bom.</p></div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body"><h3>Pilar III — Aprendizado configurável</h3><p>Fecha o ciclo: o robô passa a escolher pelo que cada cliente define como sucesso.</p></div>
+  </div>
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-body"><h3>Endurecimento</h3><p>Remove os tetos de escala antes que o crescimento os encontre.</p></div>
+  </div>
+
+  <div class="callout ok"><strong>O ponto central.</strong> A ordem importa: <em>qualidade antes de
+    autonomia, autonomia antes de aprendizado em escala</em>. Automatizar a publicação de um criativo
+    fraco multiplica o problema; ensinar o robô a escolher antes de medir certo o ensina errado. Esta
+    sequência entrega valor a cada fase e protege a marca do cliente em cada passo.</div>
+
+  <p class="small muted" style="margin-top:18px">Documento gerado por auditoria de código (base: commit
+    705594b), recalibrado para a visão de autonomia governável. Cada diagnóstico carrega a âncora de
+    arquivo/linha verificada. Estimativas de esforço são relativas e assumem reaproveitamento da
+    estrutura existente.</p>
+</div>
+
+</body>
+</html>

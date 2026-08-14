@@ -1,0 +1,210 @@
+# =============================================================================
+# Blueprint do Render — PRODUÇÃO COMPLETA (web + api + agents + worker + Postgres).
+#
+# Este é o blueprint do PRODUTO INTEIRO: geração + agendamento + publicação + métricas + loop
+# autônomo (o worker 24/7). Planos PAGOS (starter) — o Render não permite worker/cron no plano
+# free (ver `render.demo.yaml` para a demonstração gratuita, só de geração).
+#
+# Por que paid + rede privada (e não os passos manuais do free):
+#   - Em planos pagos, web/private services se falam pela REDE PRIVADA por hostname interno estável
+#     ("fast, safe and reliable" — render.com/docs/private-network). Então web→api e api/worker→agents
+#     usam `fromService property: hostport` e o Render injeta o endereço interno automaticamente —
+#     SEM colar URL pública à mão, SEM bloqueio de CORS/SSRF do free tier.
+#   - O `agents` vira `pserv` (private service): sem URL pública, só alcançável internamente —
+#     defesa em profundidade, além do `AGENTS_INTERNAL_TOKEN`.
+#
+# Como usar: render.com → New → Blueprint → conecta este repo → escolhe ESTE render.yaml → Apply.
+#   Depois, na UI da plataforma: criar conta (1º usuário = Admin) → Configurações › IA → colar a
+#   chave do provider (ex.: Gemini, https://aistudio.google.com/apikey) → gerar de verdade.
+#
+# AGNÓSTICO: o código lê TUDO de variáveis de ambiente (padrão 12-factor / docker-compose). Este
+# arquivo só mapeia env→Render; nada no código depende do Render. Para outra plataforma (Fly, ECS,
+# Kubernetes, VM com Docker Compose), use o `docker-compose.yml` ou replique estas mesmas env vars.
+#
+# ── Armazenamento de mídia (MinIO/S3) — DECISÃO DO CLIENTE ───────────────────────────────────────
+#   O Render não oferece MinIO gerenciado. Sem `Minio__*`, a API/worker operam em modo degradado
+#   honesto (imagem inline, payload maior) — suficiente para validar o fluxo. Para publicação REAL,
+#   a Graph API precisa baixar a imagem de uma URL pública: provisione um bucket S3-compatível
+#   (MinIO próprio, AWS S3, Cloudflare R2, Backblaze B2…) e preencha `Minio__Endpoint/AccessKey/
+#   SecretKey/PublicBaseUrl` na API e no worker (marcados `sync: false` abaixo). É a "API de
+#   armazenamento" que a seção 4 da proposta atribui à contratante.
+# =============================================================================
+
+databases:
+  - name: social-ai-db
+    plan: starter
+    postgresMajorVersion: "16"
+
+services:
+  # ── API .NET (pública; recebe o browser e orquestra a geração) ──────────────────────────────────
+  - name: social-ai-api
+    type: web
+    runtime: docker
+    plan: starter
+    region: oregon
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: DOTNET_ENVIRONMENT
+        value: Production
+      # Connection string no formato .NET (mapeada por DUPLO underscore: env → cfg["ConnectionStrings:Postgres"]).
+      - key: ConnectionStrings__Postgres
+        fromDatabase:
+          name: social-ai-db
+          property: connectionString
+      # Segredos gerados 1x e PRESERVADOS entre deploys (o Render só cria se ainda não existem).
+      # Nomes com DUPLO underscore: o .NET lê cfg["Jwt:Secret"] / cfg["Secrets:EncryptionKey"].
+      # NÃO regenerar Secrets__EncryptionKey depois — invalidaria todos os segredos já cifrados.
+      - key: Jwt__Secret
+        generateValue: true
+      - key: Secrets__EncryptionKey
+        generateValue: true
+      # Token interno api→agents (valor canônico gerado aqui; o agents o referencia abaixo).
+      - key: Agents__InternalToken
+        generateValue: true
+      # Endereço INTERNO do agents (rede privada, plano pago). O Render injeta "host:porta".
+      - key: Agents__BaseUrl
+        fromService:
+          name: social-ai-agents
+          type: pserv
+          property: hostport
+      # Origem do web para o CORS. A API usa match EXATO (scheme+host, sem barra final) — precisa de
+      # "https://social-ai-web-xxxx.onrender.com". O `fromService property: host` devolveria o host SEM
+      # o `https://`, quebrando o match — por isso é MANUAL (sync:false): após o 1º deploy, copie a URL
+      # PÚBLICA do serviço social-ai-web (com https://) e cole aqui no painel da API. (Não mudamos o
+      # código por causa disso — o app continua agnóstico, lendo Cors:WebOrigin de env.)
+      - key: Cors__WebOrigin
+        sync: false
+      # Publicação: mock por padrão. Flip para "graph" exige token IG válido e, p/ a Meta baixar a
+      # imagem, OU Minio__* preenchido OU Api__PublicBaseUrl setado (a própria API serve a imagem
+      # em /public/media — rota assinada). Em conta de DEV (app em Development) publica sem App Review.
+      - key: Publisher__Mode
+        value: mock
+      # Worker-in-API (free-tier): a API hospeda os jobs do worker (agenda→publica→métricas) no mesmo
+      # processo, dispensando um serviço Worker pago. Ligar SÓ quando NÃO há serviço worker dedicado
+      # (senão os jobs rodam em dobro). Requer um keep-alive externo pingando /health (free dorme ~15min).
+      - key: RunWorkerInProcess
+        value: "false"
+      # Base pública da PRÓPRIA API — usada p/ montar a URL absoluta da rota /public/media que a Graph
+      # API baixa quando NÃO há MinIO. Sem barra final. Preencher no painel após o 1º deploy (sync:false)
+      # com a URL pública deste serviço (ex.: https://social-ai-api-xxxx.onrender.com).
+      - key: Api__PublicBaseUrl
+        sync: false
+      # Versão da Graph API (config, não hardcoded). Atualize quando a Meta expirar a versão.
+      - key: Instagram__GraphVersion
+        value: v22.0
+      # Credenciais Meta (publicação/insights reais) — preencher no painel quando o App Review sair.
+      - key: Meta__AppId
+        sync: false
+      - key: Meta__AppSecret
+        sync: false
+      # Armazenamento S3-compatível (ver bloco no topo). Vazio = degradado honesto.
+      - key: Minio__Endpoint
+        sync: false
+      - key: Minio__AccessKey
+        sync: false
+      - key: Minio__SecretKey
+        sync: false
+      - key: Minio__PublicBaseUrl
+        sync: false
+
+  # ── Agents (Node) — private service: sem URL pública, só alcançável internamente ─────────────────
+  - name: social-ai-agents
+    type: pserv
+    runtime: docker
+    plan: starter
+    region: oregon
+    dockerfilePath: ./services/agents/Dockerfile
+    dockerContext: ./services/agents
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # O agents (Node) lê process.env.AGENTS_INTERNAL_TOKEN — mesmo valor gerado na API.
+      - key: AGENTS_INTERNAL_TOKEN
+        fromService:
+          name: social-ai-api
+          type: web
+          envVarKey: Agents__InternalToken
+      # A chave de IA é cadastrada pela UI (cifrada no servidor) e injetada por workspace no payload
+      # ao agents — por isso fica VAZIA aqui. (Para fixar uma chave global, defina AI_PROVIDER_KEY.)
+      - key: AI_PROVIDER_KEY
+        sync: false
+
+  # ── Worker .NET — jobs 24/7: agenda → publica → métricas → loop autônomo ─────────────────────────
+  # Compartilha o MESMO Postgres e a MESMA Secrets__EncryptionKey da API (decifra o token IG p/ publicar).
+  # Worker não recebe tráfego privado (só envia) — ok: ele FALA com DB, agents e storage; ninguém o chama.
+  - name: social-ai-worker
+    type: worker
+    runtime: docker
+    plan: starter
+    region: oregon
+    dockerfilePath: ./apps/worker/Dockerfile
+    dockerContext: .
+    autoDeployTrigger: commit
+    envVars:
+      - key: DOTNET_ENVIRONMENT
+        value: Production
+      - key: ConnectionStrings__Postgres
+        fromDatabase:
+          name: social-ai-db
+          property: connectionString
+      # MESMA chave de cifra e Jwt da API (compartilhados via fromService — não regerar aqui).
+      - key: Secrets__EncryptionKey
+        fromService:
+          name: social-ai-api
+          type: web
+          envVarKey: Secrets__EncryptionKey
+      - key: Jwt__Secret
+        fromService:
+          name: social-ai-api
+          type: web
+          envVarKey: Jwt__Secret
+      - key: Agents__BaseUrl
+        fromService:
+          name: social-ai-agents
+          type: pserv
+          property: hostport
+      - key: Publisher__Mode
+        value: mock
+      - key: Instagram__GraphVersion
+        value: v22.0
+      # Loop autônomo: DESLIGADO por padrão (decisão de segurança — opt-in explícito).
+      - key: Loop__Enabled
+        value: "false"
+      # Armazenamento S3-compatível — MESMOS valores da API (a Graph API baixa a imagem daqui).
+      - key: Minio__Endpoint
+        sync: false
+      - key: Minio__AccessKey
+        sync: false
+      - key: Minio__SecretKey
+        sync: false
+      - key: Minio__PublicBaseUrl
+        sync: false
+
+  # ── Web (Next.js standalone) — UI do operador ───────────────────────────────────────────────────
+  - name: social-ai-web
+    type: web
+    runtime: docker
+    plan: starter
+    region: oregon
+    dockerfilePath: ./apps/web/Dockerfile
+    dockerContext: ./apps/web
+    healthCheckPath: /healthz
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # O browser chama a API pública direto (cross-origin) — exige Cors__WebOrigin na API.
+      - key: NEXT_PUBLIC_API_PROXY
+        value: "false"
+      # URL pública da API — NEXT_PUBLIC_* é inlinada no BUILD, então precisa existir ANTES do build.
+      # MANUAL (sync:false): após o 1º deploy, copie a URL pública do serviço social-ai-api e cole
+      # aqui no painel do web (dispara rebuild com a URL embutida). Sem barra final.
+      # (Não dá para usar fromService aqui porque o valor é consumido em build-time, não runtime.)
+      - key: NEXT_PUBLIC_API_URL
+        sync: false

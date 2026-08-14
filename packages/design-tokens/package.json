@@ -1,0 +1,14 @@
+{
+  "name": "@social-ai/design-tokens",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "tailwind.tokens.js",
+  "exports": {
+    ".": "./tailwind.tokens.js",
+    "./css": "./apex-vars.css"
+  },
+  "scripts": {
+    "compile": "node compile.mjs"
+  }
+}

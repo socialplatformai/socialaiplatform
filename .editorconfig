@@ -1,0 +1,35 @@
+# EditorConfig — formatação consistente entre editores e IDEs.
+# https://editorconfig.org · lido também pelo `dotnet format` e analisadores Roslyn.
+root = true
+
+# Padrão para todos os arquivos
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+# C# / .NET — indentação de 4 espaços (convenção da linguagem)
+[*.cs]
+indent_size = 4
+
+[*.{csproj,props,targets}]
+indent_size = 2
+
+# Web / agents (TypeScript, JavaScript, JSON, config)
+[*.{ts,tsx,js,jsx,mjs,cjs,json,jsonc}]
+indent_size = 2
+
+# Markdown — não cortar trailing whitespace (dois espaços = quebra de linha)
+[*.md]
+trim_trailing_whitespace = false
+
+# Makefile exige tabs reais
+[Makefile]
+indent_style = tab
+
+# Arquivos de ambiente e shell
+[*.{env,sh}]
+indent_size = 2

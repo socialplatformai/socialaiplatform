@@ -1,0 +1,125 @@
+@import "tailwindcss";
+/* Tokens APEX gerados por packages/design-tokens/compile.mjs.
+   Reexecutar o compilador e copiar para cá quando a marca mudar. */
+@import "./apex-vars.css";
+
+/* Fonte da marca: Satoshi (display/body), SELF-HOSTED em /public/fonts.
+   Servir local (em vez do <link> da Fontshare) elimina a dependência de CDN externa,
+   fecha o CSP ('self' em style-src/font-src, sem allowlist de terceiros) e remove o
+   round-trip de rede no 1º paint. Os .woff2 (400/500/700/900) são os mesmos arquivos
+   que a Fontshare servia. font-display: swap evita texto invisível durante o load (FOIT). */
+@font-face {
+  font-family: 'Satoshi';
+  src: url('/fonts/satoshi-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Satoshi';
+  src: url('/fonts/satoshi-500.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Satoshi';
+  src: url('/fonts/satoshi-700.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Satoshi';
+  src: url('/fonts/satoshi-900.woff2') format('woff2');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+html,
+body {
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+}
+
+/* ── Dark mode ────────────────────────────────────────────────────────────
+   Inverte a base canvas/paper/ink mantendo os tokens semânticos. Como os
+   componentes consomem var(--color-*), a UI inteira se adapta sem mudança.
+   Ativado por .dark no <html> (toggle na topbar, persistido em localStorage). */
+.dark {
+  --color-canvas: #14161F;
+  --color-canvas-2: #1A1D28;
+  --color-canvas-3: #222633;
+  --color-paper: #1C2030;
+  --color-paper-2: #232838;
+  --color-white: #2A3142;
+  --color-ink: #ECEEF4;
+  --color-ink-2: #D4D8E2;
+  --color-ink-3: #AEB4C2;
+  --color-slate: #8A92A4;
+  --color-slate-2: #707892;
+  --color-slate-3: #4A5266;
+}
+
+/* Transição suave ao alternar tema. */
+html, body, .theme-aware { transition: background-color .25s ease, color .25s ease; }
+
+/* ── Motion (R1/T4 + R5a) — coreografia com propósito (Disney-12 staging / Val Head) ──
+   Usa os tokens de duração/easing do sistema (apex-vars). Tudo respeita
+   prefers-reduced-motion (a11y, Apple HIG / WCAG 2.3.3). */
+
+/* Pulso calmo do agente ATIVO na viz do pipeline (não-decorativo: comunica "pensando"). */
+@keyframes apex-breathe {
+  0%, 100% { opacity: .55; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.35); }
+}
+.apex-breathe {
+  animation: apex-breathe 1.6s var(--ease-standard) infinite;
+}
+
+/* Revelação em streaming dos passos do agente (fade+slide curto). */
+@keyframes apex-stream-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.apex-stream-in {
+  animation: apex-stream-in var(--duration-slow) var(--ease-decel) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .apex-breathe, .apex-stream-in {
+    animation: none !important;
+  }
+  /* a11y (WCAG 2.3.3 Animation from Interactions): neutraliza TODA animação/transição não-
+     essencial para quem pede menos movimento — não só as keyframes custom acima. Cobre as
+     transições utilitárias do Tailwind (rotação de chevron, animate-pulse, fades de hover)
+     sem precisar marcar elemento por elemento. Mantém ~1ms (não 0) para não quebrar handlers
+     de transitionend que dependem do evento disparar. */
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Acessibilidade: classe utilitária para conteúdo só-leitor-de-tela. */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}
+/* Skip-link: escondido visualmente por padrão (igual .sr-only), revelado só ao receber
+   foco via teclado. Sem a regra base abaixo o link "Pular para o conteúdo" ficava VISÍVEL
+   no canto superior esquerdo (só existia a regra :focus). */
+.focusable-sr {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}
+.focusable-sr:focus {
+  position: fixed; top: 12px; left: 12px; width: auto; height: auto;
+  padding: 10px 16px; margin: 0; overflow: visible; clip: auto; white-space: normal;
+  background: var(--color-ink); color: var(--color-canvas);
+  border-radius: 999px; z-index: 100; font-size: 14px; font-weight: 600;
+}

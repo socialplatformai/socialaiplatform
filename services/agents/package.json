@@ -1,0 +1,30 @@
+{
+  "name": "@social-ai/agents",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.json && tsc-alias -p tsconfig.json --resolve-full-paths && npm run copy:prompts",
+    "copy:prompts": "node scripts/copy-prompts.mjs",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check-templates": "tsx ../../scripts/export-templates.mjs --check"
+  },
+  "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "dotenv": "^17.4.2",
+    "fastify": "5.8.5",
+    "satori": "^0.26.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.2",
+    "tsc-alias": "1.8.10",
+    "tsx": "4.19.2",
+    "typescript": "5.7.2",
+    "vitest": "2.1.8"
+  }
+}

@@ -1,0 +1,8 @@
+.next/
+node_modules/
+npm-debug.log*
+
+# Playwright (a11y E2E) — artefatos de execução, não versionar
+test-results/
+playwright-report/
+.last-run.json

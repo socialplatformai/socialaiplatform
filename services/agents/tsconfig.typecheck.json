@@ -1,0 +1,9 @@
+{
+  "//": "Typecheck que INCLUI os testes (.test.ts) — sem emitir. O tsconfig.json de build os exclui (não vão para dist/); aqui garantimos que erros de tipo em testes sejam pegos antes do build.",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}
