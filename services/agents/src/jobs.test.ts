@@ -70,6 +70,17 @@ describe('mergeAiOverride — override do workspace vence o env (B4)', () => {
     const ai = mergeAiOverride(baseAi(), { provider: 'inexistente', apiKey: 'k' })
     expect(ai.textProvider).toBe('gemini')
   })
+
+  it('modelo com e-mail no override é descartado (cai no default do provider)', () => {
+    const ai = mergeAiOverride(baseAi(), {
+      provider: 'gemini',
+      apiKey: 'k',
+      imageModel: 'socialaiplatform2026@gmail.com',
+      textModel: 'nao-e-email@x.com',
+    })
+    expect(ai.model.image).toBe(defaultModelFor('gemini', 'image'))
+    expect(ai.model.text).toBe(defaultModelFor('gemini', 'text'))
+  })
 })
 
 describe('B4-bis — a chave do override chega à factory (não a do process.env)', () => {

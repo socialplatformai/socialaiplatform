@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { settingsApi, type AiConfig, type AiTestResult } from "@/lib/settings";
+import { ApiError } from "@/lib/api";
 import { Badge, Button, Card, Field, Input, PageHeader, PageShell, SectionLabel, Select } from "@/components/ui";
 
 // B (ADR-0008): Configurações de IA por workspace. Provider/modelo/chave — a chave é
@@ -17,14 +18,48 @@ const PROVIDERS = [
   { id: "anthropic", label: "Anthropic (Claude)" },
 ];
 
-// Placeholders por provedor — identificadores recomendados (jun/2026). Só dica de UI; em branco usa o
-// default do provedor. Claude não gera imagem (campo de imagem fica desabilitado p/ anthropic).
-const MODEL_HINTS: Record<string, { text: string; image: string }> = {
-  gemini: { text: "models/gemini-3.5-flash", image: "models/gemini-3.1-flash-image" },
-  openai: { text: "gpt-5.5", image: "gpt-image-2" },
-  grok: { text: "grok-4.3", image: "(Grok não gera imagem — use gemini/openai)" },
-  anthropic: { text: "claude-opus-4-8", image: "(Claude não gera imagem — use gemini/openai)" },
+/** Opções de modelo por provedor — o operador escolhe na lista (evita digitar e-mail no campo). */
+const TEXT_MODELS: Record<string, { id: string; label: string }[]> = {
+  gemini: [
+    { id: "models/gemini-3.5-flash", label: "gemini-3.5-flash (recomendado)" },
+    { id: "models/gemini-2.5-flash", label: "gemini-2.5-flash" },
+    { id: "models/gemini-2.5-pro", label: "gemini-2.5-pro" },
+  ],
+  openai: [
+    { id: "gpt-5.5", label: "gpt-5.5 (recomendado)" },
+    { id: "gpt-4.1", label: "gpt-4.1" },
+  ],
+  grok: [{ id: "grok-4.3", label: "grok-4.3 (recomendado)" }],
+  anthropic: [
+    { id: "claude-opus-4-8", label: "claude-opus-4-8 (recomendado)" },
+    { id: "claude-sonnet-4-5", label: "claude-sonnet-4-5" },
+  ],
 };
+
+const IMAGE_MODELS: Record<string, { id: string; label: string }[]> = {
+  gemini: [
+    { id: "models/gemini-3.1-flash-image", label: "gemini-3.1-flash-image (recomendado)" },
+    { id: "models/gemini-2.5-flash-image", label: "gemini-2.5-flash-image" },
+  ],
+  openai: [
+    { id: "gpt-image-2", label: "gpt-image-2 (recomendado)" },
+    { id: "gpt-image-1", label: "gpt-image-1" },
+  ],
+};
+
+const DEFAULT_TEXT: Record<string, string> = {
+  gemini: "models/gemini-3.5-flash",
+  openai: "gpt-5.5",
+  grok: "grok-4.3",
+  anthropic: "claude-opus-4-8",
+};
+
+const DEFAULT_IMAGE: Record<string, string> = {
+  gemini: "models/gemini-3.1-flash-image",
+  openai: "gpt-image-2",
+};
+
+const CUSTOM = "__custom__";
 
 export default function AiSettingsPage() {
   const qc = useQueryClient();
@@ -40,10 +75,9 @@ export default function AiSettingsPage() {
         title="Inteligência artificial"
         description={
           <>
-            Provedor, modelos e chave de IA da sua conta. A chave é{" "}
-            <span className="font-medium text-ink">cifrada em repouso</span> e nunca é exibida de volta —
-            para trocá-la, basta salvar uma nova. Sem chave, a plataforma roda em{" "}
-            <span className="font-medium text-ink">modo simulado</span> (sem geração real).
+            Provedor, modelos e chave de IA da sua conta. Escolha os modelos na lista e salve —
+            <span className="font-medium text-ink"> não precisa colar a chave de novo</span> só para
+            trocar o modelo. A chave é cifrada e nunca é exibida de volta.
           </>
         }
       />
@@ -68,25 +102,44 @@ export default function AiSettingsPage() {
   );
 }
 
+function pickSelectValue(current: string, options: { id: string }[]): string {
+  if (!current) return options[0]?.id ?? "";
+  if (options.some((o) => o.id === current)) return current;
+  return CUSTOM;
+}
+
 function AiConfigForm({ config, onSaved }: { config: AiConfig; onSaved: () => void }) {
   const [provider, setProvider] = useState(config.provider ?? "gemini");
-  const [textModel, setTextModel] = useState(config.textModel ?? "");
-  const [imageModel, setImageModel] = useState(config.imageModel ?? "");
+  const [textModel, setTextModel] = useState(config.textModel ?? DEFAULT_TEXT[config.provider ?? "gemini"] ?? "");
+  const [imageModel, setImageModel] = useState(
+    config.imageModel ?? DEFAULT_IMAGE[config.provider ?? "gemini"] ?? "",
+  );
   const [apiKey, setApiKey] = useState("");
   const [test, setTest] = useState<AiTestResult | null>(null);
+  const [savedOk, setSavedOk] = useState(false);
 
-  // Quando a config carregada muda (ex.: após salvar), ressincroniza os campos de metadados.
   useEffect(() => {
-    setProvider(config.provider ?? "gemini");
-    setTextModel(config.textModel ?? "");
-    setImageModel(config.imageModel ?? "");
+    const p = config.provider ?? "gemini";
+    setProvider(p);
+    setTextModel(config.textModel ?? DEFAULT_TEXT[p] ?? "");
+    setImageModel(config.imageModel ?? DEFAULT_IMAGE[p] ?? "");
   }, [config]);
 
-  // Provedor que não gera imagem (grok/anthropic) → limpa o modelo de imagem para não enviar
-  // um valor remanescente de um provedor anterior (o campo fica desabilitado).
   useEffect(() => {
-    if (provider === "grok" || provider === "anthropic") setImageModel("");
-  }, [provider]);
+    if (provider === "grok" || provider === "anthropic") {
+      setImageModel("");
+      return;
+    }
+    // Ao trocar provedor, se o modelo atual não pertence ao novo, aplica o recomendado.
+    const texts = TEXT_MODELS[provider] ?? [];
+    const images = IMAGE_MODELS[provider] ?? [];
+    if (texts.length && !texts.some((t) => t.id === textModel) && textModel !== "") {
+      setTextModel(DEFAULT_TEXT[provider] ?? texts[0].id);
+    }
+    if (images.length && imageModel && !images.some((t) => t.id === imageModel)) {
+      setImageModel(DEFAULT_IMAGE[provider] ?? images[0].id);
+    }
+  }, [provider]); // eslint-disable-line react-hooks/exhaustive-deps -- só ao trocar provedor
 
   const save = useMutation({
     mutationFn: () =>
@@ -94,13 +147,15 @@ function AiConfigForm({ config, onSaved }: { config: AiConfig; onSaved: () => vo
         provider,
         textModel: textModel.trim() || null,
         imageModel: imageModel.trim() || null,
-        // Vazio + já configurado → API reusa a chave cifrada (não precisa reinformar).
-        apiKey: apiKey.trim() || null,
+        apiKey: apiKey.trim() || undefined,
       }),
-    onSuccess: () => {
-      setApiKey(""); // a chave é write-only: limpa o campo após salvar
+    onSuccess: (dto) => {
+      setApiKey("");
       setTest(null);
+      setSavedOk(true);
+      // Atualiza cache imediatamente com o eco do POST (modelos efetivos gravados).
       onSaved();
+      void dto;
     },
   });
 
@@ -114,22 +169,27 @@ function AiConfigForm({ config, onSaved }: { config: AiConfig; onSaved: () => vo
     onSuccess: () => {
       setApiKey("");
       setTest(null);
+      setSavedOk(false);
       onSaved();
     },
   });
 
-  const dirty =
-    provider !== (config.provider ?? "gemini") ||
-    textModel !== (config.textModel ?? "") ||
-    imageModel !== (config.imageModel ?? "") ||
-    apiKey.trim().length > 0;
-  // 1ª config: exige chave. Já configurado: salva provider/modelos sem reenviar a chave.
-  const podeSalvar =
-    provider.trim().length > 0 &&
-    dirty &&
-    (config.configured || apiKey.trim().length > 0);
-  // grok e anthropic não geram imagem → o campo de modelo de imagem fica desabilitado.
   const geraImagem = provider === "gemini" || provider === "openai";
+  const textOptions = TEXT_MODELS[provider] ?? [];
+  const imageOptions = IMAGE_MODELS[provider] ?? [];
+  const textSelect = pickSelectValue(textModel, textOptions);
+  const imageSelect = pickSelectValue(imageModel, imageOptions);
+
+  // Já configurado: Salvar SEMPRE disponível (persiste o que está na tela, sem exigir chave).
+  // 1ª config: exige chave.
+  const podeSalvar = provider.trim().length > 0 && (config.configured || apiKey.trim().length > 0);
+
+  const saveErrorMsg =
+    save.error instanceof ApiError
+      ? save.error.message
+      : save.isError
+        ? "Não foi possível salvar. Verifique o provedor, os modelos e a chave."
+        : null;
 
   return (
     <div className="space-y-6">
@@ -147,11 +207,18 @@ function AiConfigForm({ config, onSaved }: { config: AiConfig; onSaved: () => vo
           className="space-y-4"
           onSubmit={(e) => {
             e.preventDefault();
+            setSavedOk(false);
             if (podeSalvar) save.mutate();
           }}
         >
           <Field label="Provedor" hint="Quem gera texto e imagem para a sua conta.">
-            <Select value={provider} onChange={(e) => setProvider(e.target.value)}>
+            <Select
+              value={provider}
+              onChange={(e) => {
+                setSavedOk(false);
+                setProvider(e.target.value);
+              }}
+            >
               {PROVIDERS.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.label}
@@ -160,31 +227,77 @@ function AiConfigForm({ config, onSaved }: { config: AiConfig; onSaved: () => vo
             </Select>
           </Field>
 
-          <Field
-            label="Modelo de texto (opcional)"
-            hint="Em branco usa o modelo mais capaz atual do provedor. Não use e-mail neste campo."
-          >
-            <Input
-              value={textModel}
-              onChange={(e) => setTextModel(e.target.value)}
-              placeholder={`ex.: ${MODEL_HINTS[provider]?.text ?? "modelo do provedor"}`}
-            />
+          <Field label="Modelo de texto" hint="Escolha na lista. Isso é o que a geração usa de fato.">
+            <Select
+              value={textSelect}
+              onChange={(e) => {
+                setSavedOk(false);
+                const v = e.target.value;
+                if (v === CUSTOM) return;
+                setTextModel(v);
+              }}
+            >
+              {textOptions.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.label}
+                </option>
+              ))}
+              {textSelect === CUSTOM && (
+                <option value={CUSTOM}>Personalizado (abaixo)</option>
+              )}
+            </Select>
+            {textSelect === CUSTOM && (
+              <Input
+                className="mt-2"
+                value={textModel}
+                onChange={(e) => {
+                  setSavedOk(false);
+                  setTextModel(e.target.value);
+                }}
+                placeholder="id do modelo"
+              />
+            )}
           </Field>
 
           <Field
-            label="Modelo de imagem (opcional)"
+            label="Modelo de imagem"
             hint={
               geraImagem
-                ? "Em branco usa o modelo de imagem padrão do provedor. Não use e-mail neste campo."
+                ? "Escolha na lista. Não use e-mail neste campo — isso causava HTTP 404."
                 : "Este provedor não gera imagem — a geração de imagem usa Gemini/OpenAI."
             }
           >
-            <Input
-              value={imageModel}
-              onChange={(e) => setImageModel(e.target.value)}
-              placeholder={`ex.: ${MODEL_HINTS[provider]?.image ?? "modelo de imagem"}`}
+            <Select
+              value={geraImagem ? imageSelect : ""}
               disabled={!geraImagem}
-            />
+              onChange={(e) => {
+                setSavedOk(false);
+                const v = e.target.value;
+                if (v === CUSTOM) return;
+                setImageModel(v);
+              }}
+            >
+              {imageOptions.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.label}
+                </option>
+              ))}
+              {geraImagem && imageSelect === CUSTOM && (
+                <option value={CUSTOM}>Personalizado (abaixo)</option>
+              )}
+              {!geraImagem && <option value="">—</option>}
+            </Select>
+            {geraImagem && imageSelect === CUSTOM && (
+              <Input
+                className="mt-2"
+                value={imageModel}
+                onChange={(e) => {
+                  setSavedOk(false);
+                  setImageModel(e.target.value);
+                }}
+                placeholder="id do modelo de imagem"
+              />
+            )}
           </Field>
 
           <Field
@@ -192,13 +305,16 @@ function AiConfigForm({ config, onSaved }: { config: AiConfig; onSaved: () => vo
             hint={
               config.configured
                 ? "Deixe em branco para manter a chave atual. Preencha só se quiser trocá-la."
-                : "A chave é cifrada e nunca exibida de volta."
+                : "Cole a API key do provedor (não o e-mail da conta)."
             }
           >
             <Input
               type="password"
               value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
+              onChange={(e) => {
+                setSavedOk(false);
+                setApiKey(e.target.value);
+              }}
               placeholder={config.configured ? "•••••••• (mantém a atual se vazio)" : "cole a chave do provedor"}
               autoComplete="off"
             />
@@ -230,15 +346,19 @@ function AiConfigForm({ config, onSaved }: { config: AiConfig; onSaved: () => vo
             )}
           </div>
 
-          {save.isError && (
+          {savedOk && !save.isError && (
+            <p role="status" className="text-sm text-ink/70">
+              Configuração salva. Os modelos acima passam a valer na próxima geração.
+            </p>
+          )}
+          {saveErrorMsg && (
             <p role="alert" className="text-sm text-red-500">
-              Não foi possível salvar. Verifique o provedor, os modelos e a chave.
+              {saveErrorMsg}
             </p>
           )}
         </form>
       </Card>
 
-      {/* Resultado do "Testar conexão" — ok/detail PT-BR, nunca a chave */}
       {test && (
         <Card>
           <div className="flex items-start gap-3">

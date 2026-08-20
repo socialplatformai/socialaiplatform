@@ -180,6 +180,56 @@ public class AiConfigControllerTests
     }
 
     [Fact]
+    public async Task Salva_sem_modelos_grava_defaults_explicitos_do_provedor()
+    {
+        using var db = new TestDb();
+        db.Current.WorkspaceId = SeedWorkspace(db);
+
+        var save = await Controller(db, new FakeTester(new AiTestResult(true, "ok")))
+            .Save(new SaveAiConfigRequest("gemini", null, null, ChaveSecreta));
+        Assert.IsType<OkObjectResult>(save);
+
+        var get = await Controller(db, new FakeTester(new AiTestResult(true, "ok"))).Get();
+        var ok = Assert.IsType<OkObjectResult>(get.Result);
+        var dto = Assert.IsType<AiConfigDto>(ok.Value);
+        Assert.Equal("models/gemini-3.5-flash", dto.TextModel);
+        Assert.Equal("models/gemini-3.1-flash-image", dto.ImageModel);
+    }
+
+    [Fact]
+    public async Task Get_omite_modelo_que_parece_email()
+    {
+        using var db = new TestDb();
+        db.Current.WorkspaceId = SeedWorkspace(db);
+
+        // Grava direto no secret um imageModel inválido (simula o bug de produção).
+        await Controller(db, new FakeTester(new AiTestResult(true, "ok")))
+            .Save(new SaveAiConfigRequest("gemini", "models/gemini-3.5-flash", "models/gemini-3.1-flash-image", ChaveSecreta));
+
+        using (var ctx = db.NewContext())
+        {
+            var secret = ctx.Secrets.Single(s => s.Kind == SecretKind.AiProviderKey);
+            var protector = TestSecrets.Protector();
+            // Regrava payload com e-mail no imageModel (estado corrompido).
+            var bad = System.Text.Json.JsonSerializer.Serialize(new
+            {
+                Provider = "gemini",
+                TextModel = "models/gemini-3.5-flash",
+                ImageModel = "socialaiplatform2026@gmail.com",
+                ApiKey = ChaveSecreta,
+            });
+            secret.EncryptedValue = protector.Encrypt(bad);
+            ctx.SaveChanges();
+        }
+
+        var get = await Controller(db, new FakeTester(new AiTestResult(true, "ok"))).Get();
+        var ok = Assert.IsType<OkObjectResult>(get.Result);
+        var dto = Assert.IsType<AiConfigDto>(ok.Value);
+        Assert.Equal("models/gemini-3.5-flash", dto.TextModel);
+        Assert.Null(dto.ImageModel); // e-mail sanitizado → UI pode escolher de novo
+    }
+
+    [Fact]
     public async Task Rejeita_modelo_que_parece_email()
     {
         using var db = new TestDb();

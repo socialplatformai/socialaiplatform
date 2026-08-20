@@ -464,7 +464,11 @@ public class ContentController(
             protector.Decrypt(secret.EncryptedValue),
             new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
         if (stored is null || string.IsNullOrWhiteSpace(stored.ApiKey)) return null;
-        return new AgentsAiOverride(stored.Provider, stored.TextModel, stored.ImageModel, stored.ApiKey);
+        // Sanitiza modelos inválidos (ex.: e-mail salvo por engano → Gemini HTTP 404).
+        // Sem modelo válido, envia null → o agents usa defaultModelFor do provider.
+        var textModel = Features.Settings.AiConfigController.SanitizeModel(stored.TextModel);
+        var imageModel = Features.Settings.AiConfigController.SanitizeModel(stored.ImageModel);
+        return new AgentsAiOverride(stored.Provider, textModel, imageModel, stored.ApiKey);
     }
 
     /// <summary>

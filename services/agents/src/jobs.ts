@@ -41,10 +41,33 @@ function normOverrideImageProvider(v: string | undefined): ImageProviderKind | u
  * de OUTRO provider. Então recalculamos o default pelo provider efetivo via defaultModelFor.
  * Se o override mantém o provider, preserva-se o modelo do base (respeita AI_TEXT_MODEL do env).
  *
+ * Modelos inválidos (e-mail, vazio) são descartados — já vimos AI_IMAGE_MODEL / imageModel
+ * com e-mail em produção → Gemini HTTP 404.
+ *
  * A função é PURA (sem process.env, sem efeito) — testável isoladamente (B4-bis).
  */
+function isUsableModelId(v: string | undefined | null): v is string {
+  const s = (v ?? "").trim();
+  if (!s) return false;
+  // E-mail ou lixo que não é id de modelo (causa 404 no Gemini).
+  if (s.includes("@")) return false;
+  return true;
+}
+
 export function mergeAiOverride(base: AiConfig, override?: AiOverride): AiConfig {
-  if (!override) return base;
+  if (!override) {
+    // Sem override: preserva referência se os modelos do env já são usáveis (não-regressão nos testes).
+    const textOk = isUsableModelId(base.model.text);
+    const imageOk = isUsableModelId(base.model.image);
+    if (textOk && imageOk) return base;
+    return {
+      ...base,
+      model: {
+        text: textOk ? base.model.text : defaultModelFor(base.textProvider, "text"),
+        image: imageOk ? base.model.image : defaultModelFor(base.imageProvider, "image"),
+      },
+    };
+  }
   const provider = normOverrideProvider(override.provider);
   // task 1.2: imagem usa o normalizador SÓ-imagem — grok/anthropic no override não viram
   // imageProvider (não geram imagem); mantém o do env. Os modelos abaixo seguem o provider efetivo.
@@ -57,12 +80,17 @@ export function mergeAiOverride(base: AiConfig, override?: AiOverride): AiConfig
   // workspace é única). Sem override de chave, preserva-se a separação do env.
   const imageApiKey = override.apiKey?.trim() || base.imageApiKey;
 
+  const overrideText = isUsableModelId(override.textModel) ? override.textModel.trim() : undefined;
+  const overrideImage = isUsableModelId(override.imageModel) ? override.imageModel.trim() : undefined;
+  const baseText = isUsableModelId(base.model.text) ? base.model.text : defaultModelFor(textProvider, "text");
+  const baseImage = isUsableModelId(base.model.image) ? base.model.image : defaultModelFor(imageProvider, "image");
+
   const text =
-    override.textModel?.trim() ||
-    (provider ? defaultModelFor(textProvider, "text") : base.model.text);
+    overrideText ||
+    (provider ? defaultModelFor(textProvider, "text") : baseText);
   const image =
-    override.imageModel?.trim() ||
-    (imageProviderOverride ? defaultModelFor(imageProvider, "image") : base.model.image);
+    overrideImage ||
+    (imageProviderOverride ? defaultModelFor(imageProvider, "image") : baseImage);
 
   return {
     ...base,

@@ -86,7 +86,11 @@ public sealed class AgentsInventClient(HttpClient http, SecretProtector protecto
                 protector.Decrypt(secret.EncryptedValue),
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
             if (stored is null || string.IsNullOrWhiteSpace(stored.ApiKey)) return null;
-            return new AiOverrideDto(stored.Provider, stored.TextModel, stored.ImageModel, stored.ApiKey);
+            return new AiOverrideDto(
+                stored.Provider,
+                SanitizeModel(stored.TextModel),
+                SanitizeModel(stored.ImageModel),
+                stored.ApiKey);
         }
         catch
         {
@@ -94,12 +98,13 @@ public sealed class AgentsInventClient(HttpClient http, SecretProtector protecto
         }
     }
 
-    private static string FormatOf(ContentType t) => t switch
+    private static string? SanitizeModel(string? value)
     {
-        ContentType.Carousel => "carousel",
-        ContentType.Story => "story",
-        _ => "post",
-    };
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        var v = value.Trim();
+        if (v.Contains('@') && v.Contains('.')) return null;
+        return v;
+    }
 
     /// <summary>Mapeia o suggestedType (string do agents) → ContentType do domínio. Default Post.</summary>
     public static ContentType ParseType(string? s) => s?.Trim().ToLowerInvariant() switch

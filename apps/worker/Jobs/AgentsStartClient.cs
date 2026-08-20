@@ -105,12 +105,25 @@ public sealed class AgentsStartClient(HttpClient http, SecretProtector protector
                 protector.Decrypt(secret.EncryptedValue),
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
             if (stored is null || string.IsNullOrWhiteSpace(stored.ApiKey)) return null;
-            return new AiOverrideDto(stored.Provider, stored.TextModel, stored.ImageModel, stored.ApiKey);
+            return new AiOverrideDto(
+                stored.Provider,
+                SanitizeModel(stored.TextModel),
+                SanitizeModel(stored.ImageModel),
+                stored.ApiKey);
         }
         catch
         {
             return null; // chave corrompida/formato inválido → degradado honesto (cai no .env do agents).
         }
+    }
+
+    /// <summary>Descarta modelo inválido (e-mail etc.) — espelha AiConfigController.SanitizeModel.</summary>
+    private static string? SanitizeModel(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        var v = value.Trim();
+        if (v.Contains('@') && v.Contains('.')) return null;
+        return v;
     }
 
     private static string FormatOf(ContentType t) => t switch
