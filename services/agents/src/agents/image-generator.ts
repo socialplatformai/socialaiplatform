@@ -102,6 +102,33 @@ function buildImagePrompt(basePrompt: string, context?: PipelineInput['context']
     return `${basePrompt}. Contexto da marca — ${parts.join('; ')}.`
 }
 
+/**
+ * Extrai diagnóstico SEGURO de um erro de geração de imagem (sem secrets/API keys).
+ * Usado nos logs e no sufixo de `job.error` para a próxima falha ser identificável
+ * (provider HTTP status, mensagem do provedor, exception) em vez da frase genérica de cota.
+ */
+function describeImageError(err: unknown): {
+  message: string
+  name: string
+  httpStatus: number | null
+  cause: string | null
+} {
+  const message = err instanceof Error ? err.message : String(err)
+  const name = err instanceof Error ? err.name : typeof err
+  // Nunca logar o objeto inteiro se parecer carregar Authorization/apiKey.
+  const safeMessage = message
+    .replace(/(api[_-]?key|token|authorization|bearer)\s*[:=]\s*\S+/gi, '$1=***')
+    .replace(/key=[^&\s]+/gi, 'key=***')
+  const httpMatch = safeMessage.match(/\bHTTP\s+(\d{3})\b/i)
+    ?? safeMessage.match(/\b(429|401|403|404|500|502|503)\b/)
+  const httpStatus = httpMatch ? Number(httpMatch[1]) : null
+  const cause =
+    err instanceof Error && err.cause instanceof Error
+      ? err.cause.message.replace(/(api[_-]?key|token|authorization|bearer)\s*[:=]\s*\S+/gi, '$1=***')
+      : null
+  return { message: safeMessage, name, httpStatus, cause }
+}
+
 function gradientCssToSvgDataUri(css: string, width = 800, height = 600): string {
     // Extrai os color stops: "#RRGGBB 12%" (a posição é opcional).
     const stopRe = /(#[0-9a-fA-F]{3,8}|rgba?\([^)]*\))\s*(\d+(?:\.\d+)?%)?/g
@@ -174,6 +201,11 @@ export class ImageGeneratorAgent extends BaseAgent<ImageGeneratorInput, VisualSp
         // não de env (Z/ADR-0008). O client concreto vem do cache por config efetiva.
         const provider = resolveImageProvider(this.ai, getGeminiClient(aiToGeminiConfig(this.ai)))
         const newVisual = JSON.parse(JSON.stringify(visual)) as VisualSpecification
+        // Diagnóstico (sem secrets): provider/modelo efetivos desta execução — a causa real
+        // NÃO é inferida como "cota"; fica no log + em job.error para a API correlacionar.
+        const imageProviderName = provider.name
+        const imageModel = this.ai.model.image
+        const hasImageKey = Boolean(this.ai.imageApiKey || this.ai.apiKey)
 
         const slides = newVisual.slides
         const totalSlides = slides.length
@@ -185,16 +217,28 @@ export class ImageGeneratorAgent extends BaseAgent<ImageGeneratorInput, VisualSp
         // config, não código. processSlide muta cada slide IN-PLACE; como cada objeto é distinto
         // (deep-copy em newVisual), rodar em paralelo é seguro (sem estado compartilhado).
         const concurrency = imageGenConcurrency()
-        console.log(`[ImageGenerator] Processing ${totalSlides} slides for images (concurrency=${concurrency})`)
+        console.log(
+            `[ImageGenerator] Processing ${totalSlides} slides for images ` +
+            `(concurrency=${concurrency}, provider=${imageProviderName}, model=${imageModel}, hasKey=${hasImageKey})`,
+        )
 
         // Por-slide: true se ALGUMA imagem do slide caiu no fallback (após retry). Indexado por slide.index
         // p/ mensagem clara. Só ESCREVEMOS true no closure (idempotente) → seguro sob concorrência.
         const fallbackSlides: number[] = []
+        // Causas reais por slide (após esgotar retry) — alimentam o log estruturado e o job.error.
+        const fallbackCauses: Array<{ slide: number; label: string; detail: ReturnType<typeof describeImageError>; durationMs: number }> = []
         await mapWithConcurrency(slides, concurrency, async (slide) => {
             console.log(`[ImageGenerator] Generating image for slide ${slide.index} (${slide.layoutId})`)
             // processSlide já re-tenta cada imagem (recupera 429 transitório) e cai no gradiente de marca
             // só se esgotar. Retorna true nesse caso — agregamos p/ a política de não publicar degradado.
-            const usedFallback = await this.processSlide(slide, provider, designSpec, directionByIndex.get(slide.index), context)
+            const usedFallback = await this.processSlide(
+                slide,
+                provider,
+                designSpec,
+                directionByIndex.get(slide.index),
+                context,
+                { providerName: imageProviderName, model: imageModel, onFallback: (info) => fallbackCauses.push(info) },
+            )
             if (usedFallback) fallbackSlides.push(slide.index)
         })
 
@@ -203,13 +247,37 @@ export class ImageGeneratorAgent extends BaseAgent<ImageGeneratorInput, VisualSp
         // POLÍTICA (decisão do operador): se QUALQUER imagem ficou em fallback de gradiente após o retry,
         // FALHA a geração inteira — nunca entrega/publica mídia degradada (gradiente fora-da-marca no IG).
         // O 429 transitório já foi mitigado pelo retry por-imagem acima; chegar aqui = falha persistente
-        // (cota esgotada, safety block, etc.). O erro propaga pelo pipeline → job 'error' → UI mostra msg.
+        // (cota, safety, auth, timeout, etc. — a CAUSA real está em fallbackCauses, não assume cota).
         if (fallbackSlides.length > 0) {
             const lista = [...new Set(fallbackSlides)].sort((a, b) => a - b).join(', ')
+            const causeSummary = fallbackCauses
+                .map((c) => {
+                    const status = c.detail.httpStatus != null ? ` HTTP ${c.detail.httpStatus}` : ''
+                    return `slide ${c.slide} (${c.label})${status}: ${c.detail.message}` +
+                        (c.detail.cause ? ` | cause: ${c.detail.cause}` : '') +
+                        ` [${c.durationMs}ms]`
+                })
+                .join(' || ')
+            console.error('[ImageGenerator] Falha persistente de imagem (política: não publicar degradado)', {
+                provider: imageProviderName,
+                model: imageModel,
+                hasKey: hasImageKey,
+                failedSlides: [...new Set(fallbackSlides)].sort((a, b) => a - b),
+                causes: fallbackCauses.map((c) => ({
+                    slide: c.slide,
+                    label: c.label,
+                    httpStatus: c.detail.httpStatus,
+                    errorName: c.detail.name,
+                    message: c.detail.message,
+                    cause: c.detail.cause,
+                    durationMs: c.durationMs,
+                })),
+            })
             throw new Error(
                 `Geração de imagem falhou em ${fallbackSlides.length} slide(s) [${lista}] mesmo após retry ` +
-                `(provável cota do provedor de IA esgotada). Conteúdo não entregue para não publicar imagem ` +
-                `fora da marca — tente gerar novamente em instantes.`,
+                `(falha persistente do provedor de imagem; NÃO assumir cota sem ver a causa). ` +
+                `Conteúdo não entregue para não publicar imagem fora da marca — tente gerar novamente em instantes. ` +
+                `Diagnóstico: provider=${imageProviderName} model=${imageModel} | ${causeSummary || 'sem detalhe capturado'}`,
             )
         }
         return newVisual
@@ -226,27 +294,55 @@ export class ImageGeneratorAgent extends BaseAgent<ImageGeneratorInput, VisualSp
         prompt: string,
         opts: ImageOptions,
         label: string,
-    ): Promise<string> {
+        meta: { providerName: string; model: string; slideIndex: number },
+    ): Promise<{ imageUrl: string; durationMs: number }> {
         const maxAttempts = 3 // 1 + 2 retries
         let lastErr: unknown
+        let totalMs = 0
         for (let attempt = 0; attempt < maxAttempts; attempt++) {
             if (attempt > 0) {
                 const waitMs = attempt * 1000 // 1s, 2s
                 console.log(`[ImageGenerator] Retry ${attempt}/${maxAttempts - 1} de ${label} em ${waitMs}ms...`)
                 await new Promise((r) => setTimeout(r, waitMs))
             }
+            const started = Date.now()
             try {
-                return await provider.generate(prompt, opts)
+                const imageUrl = await provider.generate(prompt, opts)
+                const durationMs = Date.now() - started
+                totalMs += durationMs
+                console.log(
+                    `[ImageGenerator] OK ${label} (provider=${meta.providerName}, model=${meta.model}, ` +
+                    `attempt=${attempt + 1}/${maxAttempts}, durationMs=${durationMs})`,
+                )
+                return { imageUrl, durationMs: totalMs }
             } catch (err) {
+                const durationMs = Date.now() - started
+                totalMs += durationMs
                 lastErr = err
+                const detail = describeImageError(err)
+                console.error(`[ImageGenerator] Tentativa falhou — ${label}`, {
+                    provider: meta.providerName,
+                    model: meta.model,
+                    slide: meta.slideIndex,
+                    attempt: attempt + 1,
+                    maxAttempts,
+                    durationMs,
+                    httpStatus: detail.httpStatus,
+                    errorName: detail.name,
+                    message: detail.message,
+                    cause: detail.cause,
+                })
             }
         }
-        throw lastErr instanceof Error ? lastErr : new Error(String(lastErr))
+        const final = lastErr instanceof Error ? lastErr : new Error(String(lastErr))
+        // Anexa duração total das tentativas no Error (sem mudar o tipo de falha) p/ o caller logar.
+        ;(final as Error & { __imageGenDurationMs?: number }).__imageGenDurationMs = totalMs
+        throw final
     }
 
     /**
      * Processa um slide. Retorna `true` se ALGUMA imagem do slide caiu no fallback de gradiente
-     * (Gemini falhou mesmo após retry) — sinal p/ o pipeline FALHAR a geração em vez de publicar
+     * (provider falhou mesmo após retry) — sinal p/ o pipeline FALHAR a geração em vez de publicar
      * mídia degradada (política: nunca postar fallback no IG). `false` = todas as imagens reais.
      */
     private async processSlide(
@@ -255,8 +351,20 @@ export class ImageGeneratorAgent extends BaseAgent<ImageGeneratorInput, VisualSp
         designSpec?: BrandDesignSpec,
         direction?: SlideCreativeDirection,
         context?: PipelineInput['context'],
+        diag?: {
+            providerName: string
+            model: string
+            onFallback: (info: {
+                slide: number
+                label: string
+                detail: ReturnType<typeof describeImageError>
+                durationMs: number
+            }) => void
+        },
     ): Promise<boolean> {
         let usedFallback = false
+        const providerName = diag?.providerName ?? provider.name
+        const model = diag?.model ?? 'unknown'
         console.log(`[ImageGenerator] Processing Slide ${slide.index}. Layout: ${slide.layoutId}`)
 
         // task 1.1: RESPEITA a estratégia do Creative Director. Hoje só `generative-photo` tem
@@ -295,10 +403,10 @@ export class ImageGeneratorAgent extends BaseAgent<ImageGeneratorInput, VisualSp
                 const prompt = buildImagePrompt(slide.background.value, context)
                 // Estilo derivado do spec (paleta/mood da marca) — a imagem casa com o layout.
                 // Retry: recupera 429 transitório (o caminho de imagem do client não re-tenta sozinho).
-                const imageUrl = await this.generateWithRetry(provider, prompt, {
+                const { imageUrl } = await this.generateWithRetry(provider, prompt, {
                     aspectRatio: '4:5', // Portrait for background
                     style: bgStyle
-                }, `background slide ${slide.index}`)
+                }, `background slide ${slide.index}`, { providerName, model, slideIndex: slide.index })
                 console.log(`[ImageGenerator] Background generated successfully for slide ${slide.index}`)
                 slide.background.value = imageUrl
             } catch (error) {
@@ -306,7 +414,20 @@ export class ImageGeneratorAgent extends BaseAgent<ImageGeneratorInput, VisualSp
                 // Agora: log diagnosticável + fallback determinístico = gradiente de
                 // marca (iridescente APEX via spec), nunca preto sólido. Mídia sempre renderizável.
                 // usedFallback=true: o pipeline FALHA a geração (não publica gradiente no IG).
-                console.error(`[ImageGenerator] Falha ao gerar imagem do slide ${slide.index} (após retry) — gradiente de marca. Causa:`, error)
+                const detail = describeImageError(error)
+                const durationMs = (error as Error & { __imageGenDurationMs?: number })?.__imageGenDurationMs ?? 0
+                console.error(`[ImageGenerator] Falha ao gerar imagem do slide ${slide.index} (após retry) — gradiente de marca.`, {
+                    provider: providerName,
+                    model,
+                    slide: slide.index,
+                    label: 'background',
+                    httpStatus: detail.httpStatus,
+                    errorName: detail.name,
+                    message: detail.message,
+                    cause: detail.cause,
+                    durationMs,
+                })
+                diag?.onFallback({ slide: slide.index, label: 'background', detail, durationMs })
                 slide.background = {
                     type: 'gradient',
                     value: gradientFallback,
@@ -336,10 +457,10 @@ export class ImageGeneratorAgent extends BaseAgent<ImageGeneratorInput, VisualSp
                         const elementStyle = aesthetics
                             ? `${aesthetics.style}, paleta: ${aesthetics.palette.join(', ')}, ${aesthetics.mood}`
                             : 'photorealistic, professional, clean studio lighting'
-                        const imageUrl = await this.generateWithRetry(provider, prompt, {
+                        const { imageUrl } = await this.generateWithRetry(provider, prompt, {
                             aspectRatio: '16:9', // Usually elements are landscape-ish or square. Defaulting to 16:9 for body images
                             style: elementStyle
-                        }, `elemento '${element.role}' slide ${slide.index}`)
+                        }, `elemento '${element.role}' slide ${slide.index}`, { providerName, model, slideIndex: slide.index })
                         console.log(`[ImageGenerator] Element image generated successfully for slide ${slide.index} (${element.role})`)
                         // Update the content with the generated URL
                         element.content = imageUrl
@@ -350,7 +471,20 @@ export class ImageGeneratorAgent extends BaseAgent<ImageGeneratorInput, VisualSp
                         // gradiente de marca (iridescente APEX via spec) como data-URI SVG — mesmo
                         // fallback do background, nunca URL externa. usedFallback=true → o pipeline falha
                         // a geração (não publica gradiente no IG).
-                        console.error(`[ImageGenerator] Falha ao gerar imagem do elemento '${element.role}' no slide ${slide.index} (após retry) — gradiente de marca. Causa:`, error)
+                        const detail = describeImageError(error)
+                        const durationMs = (error as Error & { __imageGenDurationMs?: number })?.__imageGenDurationMs ?? 0
+                        console.error(`[ImageGenerator] Falha ao gerar imagem do elemento '${element.role}' no slide ${slide.index} (após retry) — gradiente de marca.`, {
+                            provider: providerName,
+                            model,
+                            slide: slide.index,
+                            label: `elemento:${element.role}`,
+                            httpStatus: detail.httpStatus,
+                            errorName: detail.name,
+                            message: detail.message,
+                            cause: detail.cause,
+                            durationMs,
+                        })
+                        diag?.onFallback({ slide: slide.index, label: `elemento:${element.role}`, detail, durationMs })
                         element.content = gradientCssToSvgDataUri(gradientFallback)
                         usedFallback = true
                     }

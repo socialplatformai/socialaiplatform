@@ -344,6 +344,7 @@ CRITICAL JSON RULES:
     }
   ): Promise<string> {
     const model = this.config.imageModel
+    const started = Date.now()
 
     // Construct a more detailed prompt for the model
     let detailedPrompt = prompt
@@ -372,13 +373,27 @@ CRITICAL JSON RULES:
         headers: this.buildHeaders(),
         body: JSON.stringify(request),
       })
+      const durationMs = Date.now() - started
 
       if (!response.ok) {
         const error = (await response.json().catch(() => ({ error: { message: response.statusText } }))) as {
-          error?: { message?: string }
+          error?: { message?: string; status?: string; code?: number }
         }
-        console.error('[GeminiAPI] Image generation failed:', error)
-        throw new Error(error.error?.message || `Image generation failed: ${response.status} ${response.statusText}`)
+        // Sem API key / body bruto com credenciais — só status + mensagem do provedor + duração.
+        const providerMsg = error.error?.message || response.statusText
+        console.error('[GeminiAPI] Image generation failed:', {
+          model,
+          httpStatus: response.status,
+          statusText: response.statusText,
+          providerStatus: error.error?.status,
+          providerCode: error.error?.code,
+          message: providerMsg,
+          durationMs,
+        })
+        throw new Error(
+          `Image generation failed: HTTP ${response.status} (${providerMsg})` +
+            (error.error?.status ? ` [${error.error.status}]` : ''),
+        )
       }
 
       const data = (await response.json()) as GeminiResponse
@@ -398,6 +413,7 @@ CRITICAL JSON RULES:
             // C (ADR-0008): conta 1 imagem REAL gerada (o fallback de gradiente do agente
             // lança antes de chegar aqui, então não é contado — fica honesto p/ o custo).
             this.usage.imageCount += 1
+            console.log('[GeminiAPI] Image generation OK', { model, durationMs, httpStatus: response.status })
             return `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}`
           }
         }
@@ -412,16 +428,28 @@ CRITICAL JSON RULES:
       const finishReason = candidate?.finishReason ?? 'UNKNOWN'
       const textInstead = data.candidates?.[0]?.content?.parts?.find(p => p.text)?.text
       console.error('[GeminiAPI] Image generation returned no inlineData.', {
+        model,
+        httpStatus: response.status,
+        durationMs,
         finishReason,
         safetyRatings: candidate?.safetyRatings,
         textInstead: textInstead?.slice(0, 200),
       })
       throw new Error(
-        `No image in response (finishReason=${finishReason})` +
+        `No image in response (HTTP ${response.status}, finishReason=${finishReason})` +
           (textInstead ? ` — model returned text instead: ${textInstead.slice(0, 120)}` : '')
       )
     } catch (error) {
-      console.error('[GeminiAPI] Network or parsing error:', error)
+      const durationMs = Date.now() - started
+      // Evita logar o Error duas vezes quando já logamos o HTTP !ok / no-inlineData acima.
+      if (!(error instanceof Error && /Image generation failed: HTTP|No image in response/.test(error.message))) {
+        console.error('[GeminiAPI] Network or parsing error:', {
+          model,
+          durationMs,
+          errorName: error instanceof Error ? error.name : typeof error,
+          message: error instanceof Error ? error.message : String(error),
+        })
+      }
       throw error
     }
   }

@@ -274,9 +274,10 @@ public class AgentsClient(HttpClient http)
         if (t.Contains("timeout") || t.Contains("timed out") || t.Contains("unavailable") || t.Contains("503"))
             return "Serviço de geração indisponível no momento. Tente novamente em instantes.";
         // Falha de geração de IMAGEM após retry (política: não entregar/publicar gradiente fora-da-marca).
-        // O image-generator já emite uma frase clara em PT-BR para o operador — repassamos como está.
+        // O image-generator emite PT-BR + diagnóstico (provider/HTTP/causa). Para a UI: frase neutra
+        // (NÃO assumir cota). O detalhe real fica no LogWarning do JobStatus (job.Error cru).
         if (t.Contains("geração de imagem falhou") || t.Contains("geracao de imagem falhou"))
-            return "Não foi possível gerar as imagens do post (provável limite do provedor de IA). " +
+            return "Não foi possível gerar as imagens do post (falha persistente no provedor de imagem). " +
                    "Aguarde alguns instantes e gere novamente.";
         if (t.Contains("headline"))
             return "A IA não conseguiu montar todos os textos do post. Tente gerar novamente.";

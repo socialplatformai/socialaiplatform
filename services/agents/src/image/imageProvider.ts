@@ -68,6 +68,7 @@ export class OpenAiImageProvider implements IImageProvider {
     let fullPrompt = prompt;
     if (options?.style) fullPrompt += ` Estilo: ${options.style}.`;
 
+    const started = Date.now();
     // ATENÇÃO: os modelos GPT image (gpt-image-1/2) NÃO suportam
     // `response_format` — enviá-lo causa HTTP 400 "unknown parameter: response_format". Eles
     // SEMPRE retornam base64 por default. Para escolher o formato do binário usa-se `output_format`
@@ -85,10 +86,17 @@ export class OpenAiImageProvider implements IImageProvider {
         output_format: "jpeg",
       }),
     });
+    const durationMs = Date.now() - started;
 
     if (!response.ok) {
       const data = (await response.json().catch(() => ({}))) as OpenAiImageResponse;
       const detail = data.error?.message ?? response.statusText;
+      console.error("[OpenAiImage] generation failed", {
+        model: this.model,
+        httpStatus: response.status,
+        message: detail,
+        durationMs,
+      });
       throw new Error(`Falha na API da OpenAI (imagem) — HTTP ${response.status}: ${detail}`);
     }
 
@@ -97,6 +105,7 @@ export class OpenAiImageProvider implements IImageProvider {
 
     if (first?.b64_json) {
       // Pedimos output_format:'jpeg' acima → o binário é JPEG. MIME coerente com o pedido.
+      console.log("[OpenAiImage] generation OK", { model: this.model, durationMs, httpStatus: response.status });
       return `data:image/jpeg;base64,${first.b64_json}`;
     }
     // Fallback: a API devolveu só uma URL — busca o binário e converte p/ data-URL.
@@ -107,6 +116,7 @@ export class OpenAiImageProvider implements IImageProvider {
       }
       const mime = bin.headers.get("content-type") ?? "image/png";
       const base64 = Buffer.from(await bin.arrayBuffer()).toString("base64");
+      console.log("[OpenAiImage] generation OK (via url)", { model: this.model, durationMs, httpStatus: response.status });
       return `data:${mime};base64,${base64}`;
     }
 
@@ -161,6 +171,7 @@ export class FluxImageProvider implements IImageProvider {
     // FLUX aceita aspect_ratio como string ("1:1","16:9","9:16","4:5","4:3"…). Repassamos o pedido
     // do layout (default 4:5 retrato, coerente com o slide 1080×1350) — sem inventar dimensões.
     const aspect = options?.aspectRatio ?? "4:5";
+    const started = Date.now();
 
     const res = await fetch(`${this.base}/models/${this.model}/predictions`, {
       method: "POST",
@@ -175,6 +186,13 @@ export class FluxImageProvider implements IImageProvider {
     if (!res.ok) {
       const data = (await res.json().catch(() => ({}))) as ReplicatePrediction;
       const detail = (data.error as string) ?? res.statusText;
+      const durationMs = Date.now() - started;
+      console.error("[FluxImage] generation failed", {
+        model: this.model,
+        httpStatus: res.status,
+        message: detail,
+        durationMs,
+      });
       throw new Error(`Falha na API do Replicate (flux) — HTTP ${res.status}: ${detail}`);
     }
 
@@ -182,8 +200,15 @@ export class FluxImageProvider implements IImageProvider {
 
     // Se `Prefer: wait` expirou com o modelo ainda rodando, faz poll curto em urls.get.
     pred = await this.pollUntilDone(pred);
+    const durationMs = Date.now() - started;
 
     if (pred.status === "failed" || pred.status === "canceled") {
+      console.error("[FluxImage] prediction ended badly", {
+        model: this.model,
+        status: pred.status,
+        message: pred.error ?? "sem detalhe",
+        durationMs,
+      });
       throw new Error(`Replicate (flux) terminou em '${pred.status}': ${pred.error ?? "sem detalhe"}.`);
     }
 
@@ -191,6 +216,7 @@ export class FluxImageProvider implements IImageProvider {
     if (!url || typeof url !== "string") {
       throw new Error(`Replicate (flux) sem output utilizável (status '${pred.status ?? "?"}').`);
     }
+    console.log("[FluxImage] generation OK", { model: this.model, durationMs, status: pred.status });
     return this.toDataUrl(url);
   }
 
