@@ -919,7 +919,12 @@ function GeneratePoll({
 
   return (
     <div className="space-y-4">
-      <AgentProgress step={data?.step ?? null} progress={data?.progress ?? 0} error={data?.error} />
+      <AgentProgress
+        step={data?.step ?? null}
+        progress={data?.progress ?? 0}
+        error={data?.error}
+        debugDetail={data?.debugDetail}
+      />
       {jobLost && (
         <div className="flex flex-wrap items-center gap-3 rounded-md bg-pastel-cream p-3">
           <p className="text-sm text-ink/75">

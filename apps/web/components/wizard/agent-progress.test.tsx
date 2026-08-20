@@ -42,6 +42,23 @@ describe('AgentProgress (R5a — viz AI-nativa)', () => {
     expect(alert.textContent).toMatch(/chave de IA/i)
     expect(alert.textContent).toMatch(/Nenhum conteúdo foi gerado/i)
   })
+
+  it('botão Debug revela o detalhe cru do pipeline', () => {
+    render(
+      <AgentProgress
+        step="image-generator"
+        progress={80}
+        error="Não foi possível gerar as imagens"
+        debugDetail="Image generation failed: HTTP 404 (Not Found) | model=socialaiplatform2026@gmail.com"
+      />,
+    )
+    const btn = screen.getByRole('button', { name: /^Debug$/i })
+    expect(btn).toBeInTheDocument()
+    expect(screen.queryByText(/HTTP 404/)).toBeNull()
+    btn.click()
+    expect(screen.getByText(/HTTP 404/)).toBeInTheDocument()
+    expect(screen.getByText(/socialaiplatform2026@gmail.com/)).toBeInTheDocument()
+  })
 })
 
 describe('friendlyGenError (honestidade de UX preservada)', () => {

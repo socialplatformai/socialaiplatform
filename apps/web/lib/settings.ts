@@ -11,12 +11,12 @@ export interface AiConfig {
   imageModel: string | null;
 }
 
-/** Payload de gravação. A apiKey é obrigatória ao salvar (cifrada em repouso, some). */
+/** Payload de gravação. A apiKey é opcional se já houver chave salva (atualiza só metadados). */
 export interface SaveAiConfig {
   provider: string;
   textModel?: string | null;
   imageModel?: string | null;
-  apiKey: string;
+  apiKey?: string | null;
 }
 
 /** Resultado do "Testar conexão" — sempre HTTP 200; ok distingue sucesso de falha. */

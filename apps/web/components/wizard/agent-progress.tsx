@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { IconCheck, IconAlert } from "@/components/icons";
 
 // R5a — Visualização AI-NATIVA do pipeline de 6 agentes. Antes era "barra + checklist"
@@ -10,6 +11,7 @@ import { IconCheck, IconAlert } from "@/components/icons";
 // Val Head (motion com propósito). Acessível: o agente ativo é anunciado a leitores de tela.
 //
 // Mantém o MESMO contrato de props (step/progress/error) — sem mudança no wizard.
+// debugDetail (opcional): erro cru do pipeline p/ o botão Debug (sem secrets).
 
 // Os 6 agentes na ordem do pipeline (espelha services/agents PipelineAgentId) + a "fala"
 // de cada um: o que ele faz, em 1ª pessoa calma. Mostra a substância do pipeline.
@@ -42,14 +44,19 @@ export function AgentProgress({
   step,
   progress,
   error,
+  debugDetail,
 }: {
   step: string | null;
   progress: number;
   error?: string | null;
+  /** Erro cru do pipeline (job.error) — exibido só ao abrir Debug. */
+  debugDetail?: string | null;
 }) {
+  const [showDebug, setShowDebug] = useState(false);
   const activeIndex = resolveActiveIndex(step, progress);
   const done = progress >= 100 && !error;
   const active = !error && !done ? (activeIndex >= 0 ? AGENTS[activeIndex] : AGENTS[0]) : null;
+  const detail = (debugDetail ?? error ?? "").trim();
 
   // Manchete que lê como o SISTEMA pensando (calma, não "Carregando 47%").
   const headline = error
@@ -136,11 +143,30 @@ export function AgentProgress({
         })}
       </ul>
 
-      {/* Estado de erro — claro, acionável, com a tradução PT-BR honesta */}
+      {/* Estado de erro — claro, acionável, com a tradução PT-BR honesta + Debug */}
       {error && (
-        <div role="alert" className="flex items-start gap-2.5 rounded-md bg-danger/10 p-3 text-sm text-danger dark:text-danger-on-dark">
-          <span className="mt-0.5 shrink-0"><IconAlert size={15} /></span>
-          <span>{friendlyGenError(error)}</span>
+        <div className="space-y-2">
+          <div role="alert" className="flex items-start gap-2.5 rounded-md bg-danger/10 p-3 text-sm text-danger dark:text-danger-on-dark">
+            <span className="mt-0.5 shrink-0"><IconAlert size={15} /></span>
+            <span className="min-w-0 flex-1">{friendlyGenError(error)}</span>
+          </div>
+          {detail && (
+            <div className="flex justify-end">
+              <button
+                type="button"
+                className="rounded-md border border-ink/15 bg-canvas px-2.5 py-1 text-xs font-medium text-ink/70 hover:bg-ink/5 hover:text-ink"
+                onClick={() => setShowDebug((v) => !v)}
+                aria-expanded={showDebug}
+              >
+                {showDebug ? "Ocultar debug" : "Debug"}
+              </button>
+            </div>
+          )}
+          {showDebug && detail && (
+            <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-words rounded-md bg-ink/[0.06] p-3 font-mono text-[11px] leading-relaxed text-ink/80">
+              {detail}
+            </pre>
+          )}
         </div>
       )}
 
@@ -170,9 +196,14 @@ export function friendlyGenError(error: string): string {
     return "Falta configurar a chave de IA. Nenhum conteúdo foi gerado — adicione a chave em Configurações › IA e tente novamente.";
   // Erro só de IMAGEM: os agentes de texto já concluíram; o render usa fundo provisório.
   // (Termos inequívocos de imagem/render — sem 'provider'/'api key', que pegavam erro de config.)
-  if (e.includes("image") || e.includes("render"))
+  if (
+    e.includes("image") ||
+    e.includes("imagem") ||
+    e.includes("render") ||
+    e.includes("falha persistente do provedor")
+  )
     return "A geração de imagem encontrou um problema. O conteúdo pode ter sido salvo com fundo provisório — verifique o resultado antes de publicar.";
-  if (e.includes("gemini") || e.includes("provider"))
+  if (e.includes("gemini") || e.includes("provider") || e.includes("provedor"))
     return "O serviço de IA está temporariamente indisponível. Tente novamente em alguns instantes.";
   if (e.includes("timeout") || e.includes("timed out"))
     return "A geração demorou mais que o esperado. Tente novamente em instantes.";

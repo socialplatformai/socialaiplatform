@@ -151,6 +151,46 @@ public class AiConfigControllerTests
         Assert.Equal("Admin", attr!.Roles); // Member (sem o papel) → 403, como MetaAppConfigController
     }
 
+    // ── Atualização sem reenviar a chave (UI podia editar provider/modelo) ───────
+    [Fact]
+    public async Task Salva_provider_modelo_sem_reenviar_chave_quando_ja_configurado()
+    {
+        using var db = new TestDb();
+        db.Current.WorkspaceId = SeedWorkspace(db);
+
+        await Controller(db, new FakeTester(new AiTestResult(true, "ok")))
+            .Save(new SaveAiConfigRequest("gemini", "models/old-text", "models/old-image", ChaveSecreta));
+
+        // Atualiza só os modelos — ApiKey null/vazia → reusa a chave cifrada.
+        var save = await Controller(db, new FakeTester(new AiTestResult(true, "ok")))
+            .Save(new SaveAiConfigRequest("gemini", "models/gemini-3.5-flash", "models/gemini-3.1-flash-image", null));
+        Assert.IsType<OkObjectResult>(save);
+
+        var get = await Controller(db, new FakeTester(new AiTestResult(true, "ok"))).Get();
+        var ok = Assert.IsType<OkObjectResult>(get.Result);
+        var dto = Assert.IsType<AiConfigDto>(ok.Value);
+        Assert.True(dto.Configured);
+        Assert.Equal("models/gemini-3.5-flash", dto.TextModel);
+        Assert.Equal("models/gemini-3.1-flash-image", dto.ImageModel);
+
+        // A chave antiga continua válida (teste de conexão ainda a enxerga).
+        var tester = new FakeTester(new AiTestResult(true, "ok"));
+        await Controller(db, tester).Test();
+        Assert.Equal(ChaveSecreta, tester.VistoApiKey);
+    }
+
+    [Fact]
+    public async Task Rejeita_modelo_que_parece_email()
+    {
+        using var db = new TestDb();
+        db.Current.WorkspaceId = SeedWorkspace(db);
+
+        var save = await Controller(db, new FakeTester(new AiTestResult(true, "ok")))
+            .Save(new SaveAiConfigRequest("gemini", null, "socialaiplatform2026@gmail.com", ChaveSecreta));
+        var problem = Assert.IsType<ObjectResult>(save);
+        Assert.Equal(400, problem.StatusCode);
+    }
+
     // ── Multi-provider ampliado (ADR-0008+): grok e anthropic salvam e round-trip ────
     [Theory]
     [InlineData("grok", "grok-4.3")]

@@ -88,7 +88,11 @@ public class ContentController(
     // por link; upload de arquivo é evolução do Pilar I) + CTA + subtítulo. Todos opcionais.
     public record CreativeInputDto(string? ReferenceUrl, string? BackgroundUrl, string? Cta, string? Subtitle);
     public record GenerateAsyncResponse(Guid ContentId, string JobId);
-    public record JobStatusDto(Guid ContentId, string Status, int Progress, string? Step, string? Error);
+    public record JobStatusDto(
+        Guid ContentId, string Status, int Progress, string? Step, string? Error,
+        // Diagnóstico cru do pipeline (job.error) — para o botão Debug na UI. Sem secrets.
+        // Null quando não há erro. A UI amigável continua em Error (FriendlyJobError).
+        string? DebugDetail = null);
 
     /// <summary>Inicia a geração e retorna { contentId, jobId } na hora (não aguarda o pipeline).</summary>
     [HttpPost("generate/async")]
@@ -203,10 +207,12 @@ public class ContentController(
                 content.Status = ContentStatus.Failed;
                 await db.SaveChangesAsync();
                 return Ok(new JobStatusDto(contentId, "error", 100, null,
-                    "A geração foi perdida (serviço reiniciado). Tente novamente."));
+                    "A geração foi perdida (serviço reiniciado). Tente novamente.",
+                    "job lost: agents restarted (in-memory store)"));
             }
             return Ok(new JobStatusDto(contentId, content.Status == ContentStatus.Failed ? "error" : "running",
-                0, null, content.Status == ContentStatus.Failed ? "Geração falhou." : null));
+                0, null, content.Status == ContentStatus.Failed ? "Geração falhou." : null,
+                content.Status == ContentStatus.Failed ? "content already Failed; agents job missing" : null));
         }
 
         if (job.Status == "done" && job.Result is not null && content.Status == ContentStatus.Generating)
@@ -234,8 +240,10 @@ public class ContentController(
 
         // O job.Error vem CRU do provedor de IA (inglês, técnico). Quando há erro, traduz p/ PT-BR
         // amigável antes de devolver à UI — mesma política do disparo (nunca código/stack cru ao operador).
+        // DebugDetail preserva o cru (sem secrets) p/ o botão Debug no wizard.
         var clientError = job.Status == "error" ? AgentsClient.FriendlyJobError(job.Error) : job.Error;
-        return Ok(new JobStatusDto(contentId, job.Status, job.Progress, job.Step, clientError));
+        var debugDetail = job.Status == "error" ? job.Error : null;
+        return Ok(new JobStatusDto(contentId, job.Status, job.Progress, job.Step, clientError, debugDetail));
     }
 
     private async Task<AgentsGenerateRequest> BuildAgentRequestAsync(

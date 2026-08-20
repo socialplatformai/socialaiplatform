@@ -94,7 +94,8 @@ function AiConfigForm({ config, onSaved }: { config: AiConfig; onSaved: () => vo
         provider,
         textModel: textModel.trim() || null,
         imageModel: imageModel.trim() || null,
-        apiKey: apiKey.trim(),
+        // Vazio + já configurado → API reusa a chave cifrada (não precisa reinformar).
+        apiKey: apiKey.trim() || null,
       }),
     onSuccess: () => {
       setApiKey(""); // a chave é write-only: limpa o campo após salvar
@@ -117,7 +118,16 @@ function AiConfigForm({ config, onSaved }: { config: AiConfig; onSaved: () => vo
     },
   });
 
-  const podeSalvar = provider.trim().length > 0 && apiKey.trim().length > 0;
+  const dirty =
+    provider !== (config.provider ?? "gemini") ||
+    textModel !== (config.textModel ?? "") ||
+    imageModel !== (config.imageModel ?? "") ||
+    apiKey.trim().length > 0;
+  // 1ª config: exige chave. Já configurado: salva provider/modelos sem reenviar a chave.
+  const podeSalvar =
+    provider.trim().length > 0 &&
+    dirty &&
+    (config.configured || apiKey.trim().length > 0);
   // grok e anthropic não geram imagem → o campo de modelo de imagem fica desabilitado.
   const geraImagem = provider === "gemini" || provider === "openai";
 
@@ -152,7 +162,7 @@ function AiConfigForm({ config, onSaved }: { config: AiConfig; onSaved: () => vo
 
           <Field
             label="Modelo de texto (opcional)"
-            hint="Em branco usa o modelo mais capaz atual do provedor."
+            hint="Em branco usa o modelo mais capaz atual do provedor. Não use e-mail neste campo."
           >
             <Input
               value={textModel}
@@ -165,7 +175,7 @@ function AiConfigForm({ config, onSaved }: { config: AiConfig; onSaved: () => vo
             label="Modelo de imagem (opcional)"
             hint={
               geraImagem
-                ? "Em branco usa o modelo de imagem padrão do provedor."
+                ? "Em branco usa o modelo de imagem padrão do provedor. Não use e-mail neste campo."
                 : "Este provedor não gera imagem — a geração de imagem usa Gemini/OpenAI."
             }
           >
@@ -178,14 +188,18 @@ function AiConfigForm({ config, onSaved }: { config: AiConfig; onSaved: () => vo
           </Field>
 
           <Field
-            label={config.configured ? "Nova chave de IA" : "Chave de IA"}
-            hint="A chave é cifrada e nunca exibida. Salvar exige informá-la (inclusive ao trocar provedor/modelo)."
+            label={config.configured ? "Nova chave de IA (opcional)" : "Chave de IA"}
+            hint={
+              config.configured
+                ? "Deixe em branco para manter a chave atual. Preencha só se quiser trocá-la."
+                : "A chave é cifrada e nunca exibida de volta."
+            }
           >
             <Input
               type="password"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
-              placeholder={config.configured ? "•••••••• (salva)" : "cole a chave do provedor"}
+              placeholder={config.configured ? "•••••••• (mantém a atual se vazio)" : "cole a chave do provedor"}
               autoComplete="off"
             />
           </Field>
@@ -218,7 +232,7 @@ function AiConfigForm({ config, onSaved }: { config: AiConfig; onSaved: () => vo
 
           {save.isError && (
             <p role="alert" className="text-sm text-red-500">
-              Não foi possível salvar. Verifique o provedor e a chave.
+              Não foi possível salvar. Verifique o provedor, os modelos e a chave.
             </p>
           )}
         </form>

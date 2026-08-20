@@ -11,7 +11,9 @@ namespace SocialAi.Api.Features.Settings;
 // B2: o GET devolve só metadados — provider/modelos + flag. A apiKey NUNCA volta em claro.
 public record AiConfigDto(bool Configured, string? Provider, string? TextModel, string? ImageModel);
 // B1: o POST recebe a chave; ela é cifrada (AES-GCM) e some — não há GET que a devolva.
-public record SaveAiConfigRequest(string Provider, string? TextModel, string? ImageModel, string ApiKey);
+// ApiKey pode vir vazia/null quando já há config: atualiza só provider/modelos e REUSA a chave salva
+// (antes a UI forçava reinformar a chave para qualquer alteração — operador ficava preso).
+public record SaveAiConfigRequest(string Provider, string? TextModel, string? ImageModel, string? ApiKey = null);
 // B3: resultado do teste — sempre HTTP 200; ok distingue sucesso de falha. Detail é PT-BR
 // e NUNCA inclui a apiKey.
 public record AiTestResponse(bool Ok, string Detail);
@@ -55,22 +57,48 @@ public class AiConfigController(
     [HttpPost]
     public async Task<IActionResult> Save(SaveAiConfigRequest req)
     {
-        if (string.IsNullOrWhiteSpace(req.Provider) || string.IsNullOrWhiteSpace(req.ApiKey))
-            return Problem("Provider e chave de IA são obrigatórios.", statusCode: 400);
+        if (string.IsNullOrWhiteSpace(req.Provider))
+            return Problem("Provider é obrigatório.", statusCode: 400);
 
         if (!SupportedProviders.Contains(req.Provider.Trim()))
             return Problem(
                 $"Provedor '{req.Provider}' não suportado. Use: gemini, openai, grok ou anthropic.",
                 statusCode: 400);
 
-        var payload = JsonSerializer.Serialize(new Stored(
-            req.Provider.Trim().ToLowerInvariant(),
-            string.IsNullOrWhiteSpace(req.TextModel) ? null : req.TextModel.Trim(),
-            string.IsNullOrWhiteSpace(req.ImageModel) ? null : req.ImageModel.Trim(),
-            req.ApiKey.Trim()));
-        var encrypted = protector.Encrypt(payload);
+        // Defesa: e-mail no campo de modelo (já ocorreu em prod → Gemini HTTP 404).
+        if (LooksLikeEmail(req.TextModel) || LooksLikeEmail(req.ImageModel))
+            return Problem(
+                "Modelo inválido: o valor parece um e-mail. Use o id do modelo (ex.: models/gemini-3.1-flash-image).",
+                statusCode: 400);
 
         var secret = await db.Secrets.FirstOrDefaultAsync(s => s.Kind == SecretKind.AiProviderKey);
+        var newKey = req.ApiKey?.Trim();
+        string apiKeyToStore;
+
+        if (!string.IsNullOrWhiteSpace(newKey))
+        {
+            apiKeyToStore = newKey;
+        }
+        else if (secret is not null && !string.IsNullOrEmpty(secret.EncryptedValue))
+        {
+            // Atualização de provider/modelos sem reenviar a chave — reusa a já cifrada.
+            var existing = JsonSerializer.Deserialize<Stored>(protector.Decrypt(secret.EncryptedValue));
+            if (existing is null || string.IsNullOrWhiteSpace(existing.ApiKey))
+                return Problem("Configuração de IA inválida. Informe a chave de IA para salvar.", statusCode: 400);
+            apiKeyToStore = existing.ApiKey;
+        }
+        else
+        {
+            return Problem("Provider e chave de IA são obrigatórios na primeira configuração.", statusCode: 400);
+        }
+
+        var textModel = string.IsNullOrWhiteSpace(req.TextModel) ? null : req.TextModel.Trim();
+        var imageModel = string.IsNullOrWhiteSpace(req.ImageModel) ? null : req.ImageModel.Trim();
+        var provider = req.Provider.Trim().ToLowerInvariant();
+
+        var payload = JsonSerializer.Serialize(new Stored(provider, textModel, imageModel, apiKeyToStore));
+        var encrypted = protector.Encrypt(payload);
+
         if (secret is null)
         {
             secret = new Secret { Kind = SecretKind.AiProviderKey };
@@ -80,11 +108,11 @@ public class AiConfigController(
         await db.SaveChangesAsync();
 
         // Eco só de metadados (a apiKey NUNCA volta).
-        return Ok(new AiConfigDto(true,
-            req.Provider.Trim().ToLowerInvariant(),
-            string.IsNullOrWhiteSpace(req.TextModel) ? null : req.TextModel.Trim(),
-            string.IsNullOrWhiteSpace(req.ImageModel) ? null : req.ImageModel.Trim()));
+        return Ok(new AiConfigDto(true, provider, textModel, imageModel));
     }
+
+    private static bool LooksLikeEmail(string? value) =>
+        !string.IsNullOrWhiteSpace(value) && value.Contains('@') && value.Contains('.');
 
     /// <summary>
     /// B3: testa a chave salva contra o provider. SEMPRE responde HTTP 200; `ok` distingue

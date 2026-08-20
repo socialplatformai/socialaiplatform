@@ -116,6 +116,8 @@ export interface JobStatus {
   progress: number;
   step: string | null;
   error: string | null;
+  /** Diagnóstico cru do pipeline (sem secrets) — botão Debug no wizard. */
+  debugDetail?: string | null;
 }
 
 // E9.5 (ADR-0007): preview do briefing — o MESMO payload que a geração envia aos agentes,
