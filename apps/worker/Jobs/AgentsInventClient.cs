@@ -106,6 +106,13 @@ public sealed class AgentsInventClient(HttpClient http, SecretProtector protecto
         return v;
     }
 
+    private static string FormatOf(ContentType t) => t switch
+    {
+        ContentType.Carousel => "carousel",
+        ContentType.Story => "story",
+        _ => "post",
+    };
+
     /// <summary>Mapeia o suggestedType (string do agents) → ContentType do domínio. Default Post.</summary>
     public static ContentType ParseType(string? s) => s?.Trim().ToLowerInvariant() switch
     {
