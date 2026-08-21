@@ -102,8 +102,9 @@ export const NAV_AREAS: NavArea[] = [
       { label: "Uso", href: "/settings/usage", group: "Conta" },
       { label: "Fuso", href: "/settings/workspace", group: "Conta" },
       { label: "Auditoria", href: "/settings/audit", group: "Conta" },
+      { label: "Banco de dados", href: "/admin/database", group: "Conta" },
     ],
-    match: ["/brand", "/settings"],
+    match: ["/brand", "/settings", "/admin"],
   },
 ];
 

@@ -28,6 +28,14 @@ export const AUDIT_ACTION_LABEL: Record<string, string> = {
   "idea.promote": "Promoveu ideia do loop",
   "user.invite": "Convidou usuário",
   "user.remove": "Removeu usuário",
+  "db.insert": "Inseriu registro (painel DB)",
+  "db.update": "Atualizou registro (painel DB)",
+  "db.delete": "Excluiu registro (painel DB)",
+  "db.create-table": "Criou tabela (painel DB)",
+  "db.drop-table": "Removeu tabela (painel DB)",
+  "db.add-column": "Adicionou coluna (painel DB)",
+  "db.rename-column": "Renomeou coluna (painel DB)",
+  "db.drop-column": "Removeu coluna (painel DB)",
 };
 
 export const auditApi = {

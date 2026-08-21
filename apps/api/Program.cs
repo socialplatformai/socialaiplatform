@@ -102,6 +102,7 @@ builder.Services.AddScoped<ICurrentBrand, CurrentBrand>();
 builder.Services.AddScoped<SocialAi.Api.Features.Brands.BrandResolver>();
 // C2 (ADR-0010): dono único da trilha de auditoria (escrita explícita nos pontos sensíveis).
 builder.Services.AddScoped<SocialAi.Api.Features.Audit.AuditService>();
+builder.Services.AddScoped<SocialAi.Api.Features.Admin.DbBrowserService>();
 builder.Services.AddDbContext<AppDbContext>(o => o.UseNpgsql(pgConn));
 builder.Services.AddScoped<SocialAi.Api.Features.Auth.TokenService>();
 builder.Services.AddScoped<RequireWorkspaceFilter>();

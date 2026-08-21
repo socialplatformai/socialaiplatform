@@ -14,7 +14,7 @@ const ALL_ROUTES = [
   '/brand',
   '/settings/brands', '/settings/instagram', '/settings/ai', '/settings/prompts',
   '/settings/approval', '/settings/usage', '/settings/workspace', '/settings/users',
-  '/settings/audit',
+  '/settings/audit', '/admin/database',
 ]
 
 describe('R2 — espinha de ≤6 áreas (Hick/Miller)', () => {
